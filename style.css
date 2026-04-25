@@ -57,7 +57,9 @@ canvas {
   background: #150022;
   border: 1px solid #3a0066;
   transition: all .3s;
+  cursor: pointer;
 }
+.dot:hover { background: #2a0044; border-color: #8855cc; }
 .dot.past { background: #4422aa; border-color: #6644cc; }
 .dot.now  { background: #ffdd44; border-color: #ffaa00; box-shadow: 0 0 6px #ffdd44; }
 #btns { display: flex; gap: 7px; }

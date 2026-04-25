@@ -540,24 +540,86 @@ class Rend {
     });
   }
 
+  drawFolkFigure(x, footY, idx, anim) {
+    const phase  = this.f * .09 + idx * 1.3;
+    const sway   = anim ? Math.round(Math.sin(phase) * 1) : 0;
+    const bob    = anim ? Math.round(Math.sin(phase * .7) * .8) : 0;
+    const ox = x + sway, fy = footY + bob;
+    const skin   = this.SKINS[idx % 6];
+    const female = !(idx & 1);
+    const slot   = Math.floor(idx / 2) % 6;
+    const sc = ['#b82858','#174882','#1a5c20','#7a1818','#b86418','#1a4860'][slot];
+    const vc = ['#5a2e08','#1e4c10','#6a1414','#163660','#4a2808','#3a1060'][slot];
+    const ac = ['#1a5c20','#7a1818','#174882','#c89420','#1a3c6c','#5c1a1a'][slot];
+    const bl = '#e8e0c8'; // blouse/shirt
+    const lift = anim ? Math.max(0, Math.round(Math.sin(phase + (idx & 1) * Math.PI) * 4)) : 0;
+    const hc = ['#1a0c00','#3a1c00','#8a5820','#0a0a18','#5a3010','#c8a050'][idx % 6];
+
+    this.px(ox-5, fy+1, 11, 2, 'rgba(0,0,0,.32)');
+
+    if (female) {
+      this.px(ox-6, fy-9,  14, 9, sc);
+      this.px(ox-5, fy-12, 12, 4, sc);
+      this.px(ox-6, fy-4,  14, 1, this.lit(sc, -20));
+      this.px(ox-3, fy-9,   7, 8, ac);
+      this.px(ox-3, fy-9,   7, 1, this.lit(ac, 30));
+    } else {
+      this.px(ox-3, fy-11, 3, 11, '#262626');
+      this.px(ox+1, fy-11, 3, 11, '#262626');
+    }
+
+    this.px(ox-3, fy-15, 7, 5, bl);
+    this.px(ox-2, fy-15, 5, 5, vc);
+    this.px(ox-1, fy-15, 2, 4, this.lit(vc, 28));
+    this.px(ox-3, fy-14, 1, 3, bl);
+    this.px(ox+2, fy-14, 1, 3, bl);
+
+    this.px(ox-2, fy-21, 5, 5, skin);
+    this.px(ox-2, fy-22, 5, 3, hc);
+    if (female) this.px(ox-3, fy-22, 7, 2, hc);
+    this.px(ox-1, fy-19, 1, 1, '#080808');
+    this.px(ox+1, fy-19, 1, 1, '#080808');
+
+    this.px(ox-3, fy-1, 3, 2, '#18100a');
+    this.px(ox+1, fy-1-lift, 3, 2, '#18100a');
+
+    this.px(ox-10, fy-13, 8, 2, bl);
+    this.px(ox+3,  fy-13, 8, 2, bl);
+    this.px(ox-11, fy-13, 2, 2, skin);
+    this.px(ox+10, fy-13, 2, 2, skin);
+  }
+
   drawDancer(n=1, anim=false) {
-    const xs = n === 2 ? [100, 156] : [128];
-    const costumes = ['#c03068','#183090'];
-    xs.forEach((x, i) => {
-      const phase = this.f * .08 + i * 1.4;
-      const sway  = anim ? Math.round(Math.sin(phase) * 1.5) : 0;
-      const by    = anim ? Math.round(Math.sin(phase) * .8) : 0;
-      const footY = 132 + by;
-      const col   = costumes[i % 2];
-      // Wide skirt/costume silhouette drawn before the body
-      this.px(x - 7 + sway, footY - 9, 16, 9, col);
-      this.px(x - 5 + sway, footY - 13, 12, 5, col);
-      this.person(x + sway, footY, this.sk(i * 2 + 1), col);
-      // One arm up, one arm down — swing alternates with phase
-      const swing = Math.round(Math.sin(phase) * 5);
-      this.px(x - 10 + sway, footY - 13 - swing, 6, 2, this.sk(i * 2 + 1)); // left
-      this.px(x +  4 + sway, footY - 13 + swing, 6, 2, this.sk(i * 2 + 1)); // right
-    });
+    if (n <= 1) {
+      this.drawFolkFigure(128, 132, 0, anim);
+      return;
+    }
+    const front = [74, 100, 128, 156, 182];
+    const back  = [88, 128, 168];
+
+    // Celtic floor rings
+    const cx = this.cx;
+    for (let r = 10; r < 58; r += 11) {
+      cx.strokeStyle = `rgba(180,115,38,${Math.max(0, .10 - r * .0014)})`;
+      cx.lineWidth = 1;
+      cx.beginPath();
+      cx.ellipse(128, 136, r, Math.round(r * .34), 0, 0, Math.PI * 2);
+      cx.stroke();
+    }
+
+    // Back arc — hand connections then figures
+    for (let i = 0; i < back.length - 1; i++) {
+      const x1 = back[i] + 10, x2 = back[i+1] - 11;
+      if (x2 > x1) this.px(x1, 102, x2-x1, 1, 'rgba(220,185,155,.45)');
+    }
+    back.forEach((x, i) => this.drawFolkFigure(x, 115, i + 5, anim));
+
+    // Front arc — hand connections then figures
+    for (let i = 0; i < front.length - 1; i++) {
+      const x1 = front[i] + 10, x2 = front[i+1] - 11;
+      if (x2 > x1) this.px(x1, 117, x2-x1, 1, 'rgba(220,185,155,.55)');
+    }
+    front.forEach((x, i) => this.drawFolkFigure(x, 130, i, anim));
   }
 
   drawAudience(applause=false) {
@@ -776,8 +838,22 @@ class Show {
   sub(t) { this.$sub.textContent  = t; }
   updateDots() {
     this.$dots.innerHTML = ACTS.map((a,i)=>
-      `<div class="dot${i<this.idx?' past':i===this.idx?' now':''}" title="${a.name}"></div>`
+      `<div class="dot${i<this.idx?' past':i===this.idx?' now':''}" title="${a.name}" data-i="${i}"></div>`
     ).join('');
+    this.$dots.querySelectorAll('.dot').forEach(d => {
+      d.onclick = () => this.jumpToAct(+d.dataset.i);
+    });
+  }
+  jumpToAct(i) {
+    if (!this.started) { this.sy.boot(); this.started = true; }
+    this.sy.silence();
+    this.idx = i;
+    this.phase = 'fade-in'; this.timer = 0;
+    this.state.overlay = 1;
+    this.updateDots();
+    this.name('♪ ♪  EISTEDDFOD  ♪ ♪');
+    this.sub('...');
+    setTimeout(() => { if (this.sy.ready) M.fanfare(this.sy); }, 500);
   }
   start() { this.sy.boot(); this.started=true; this.nextAct(); }
   skip()  {
