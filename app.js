@@ -622,6 +622,60 @@ class Rend {
     front.forEach((x, i) => this.drawFolkFigure(x, 130, i, anim));
   }
 
+  drawLongwaysDance(anim=false) {
+    const P    = 420;
+    const t    = (this.f % P) / P;
+    const ease = p => p < .5 ? 2*p*p : 1-Math.pow(-2*p+2, 2)/2;
+    const seg  = (s,e) => ease(Math.max(0, Math.min(1, (t-s)/(e-s))));
+
+    // 0.00-0.15 formation (stand in lines)
+    // 0.15-0.38 4 steps forward (advance)
+    // 0.38-0.60 right-shoulder cross (swap places)
+    // 0.60-0.72 two-arm bridge (face partner, hold both hands)
+    // 0.72-0.90 4 steps back (retreat)
+    // 0.90-1.00 pause before next figure
+    const adv = t<.15?0 : t<.38?seg(.15,.38) : t<.72?1 : t<.90?1-seg(.72,.90) : 0;
+    const cr  = t<.32?0 : t<.55?seg(.32,.55) : t<.72?1 : t<.90?1-seg(.72,.90) : 0;
+    const br  = t<.55?0 : t<.63?seg(.55,.63) : t<.72?1-seg(.63,.72) : 0;
+
+    const xs    = [52, 86, 118, 150, 184]; // 5 couple positions
+    const yA    = 120, yB = 134, yMid = 127;
+    const CROSS = 11; // px for right-shoulder pass
+
+    // Subtle longways set floor markers
+    this.px(38, yA+5, 180, 1, 'rgba(255,200,80,.06)');
+    this.px(38, yB+5, 180, 1, 'rgba(255,200,80,.06)');
+
+    for (let i = 0; i < 5; i++) {
+      const pass = Math.sin(cr * Math.PI); // peaks at mid-crossing
+
+      // A dancer (even idx, female): advances down, crosses right
+      const ax = Math.round(xs[i] + cr * CROSS);
+      const ay = Math.round(yA + adv * (yMid - yA) - pass * 2);
+
+      // B dancer (odd idx, male): advances up, crosses left
+      const bx = Math.round(xs[i] - cr * CROSS);
+      const by = Math.round(yB - adv * (yB - yMid) + pass * 2);
+
+      // Two-arm bridge: arch the joined hands as a visible line
+      if (br > 0.05) {
+        const hy = Math.round(Math.min(ay, by)) - 13;
+        const lx = Math.min(ax, bx) + 10;
+        const rx = Math.max(ax, bx) - 11;
+        if (rx > lx) this.px(lx, hy, rx-lx, 2, `rgba(220,185,155,${br * .75})`);
+      }
+
+      // Draw farther figure first so nearer one paints on top
+      if (ay <= by) {
+        this.drawFolkFigure(ax, ay, i*2,   anim);
+        this.drawFolkFigure(bx, by, i*2+1, anim);
+      } else {
+        this.drawFolkFigure(bx, by, i*2+1, anim);
+        this.drawFolkFigure(ax, ay, i*2,   anim);
+      }
+    }
+  }
+
   drawAudience(applause=false) {
     const HC=['#0a0314','#14061e','#080a12','#04030c','#1c0a04','#120800'];
     const BC=['#040208','#07030c','#050506','#020204'];
@@ -690,6 +744,7 @@ class Rend {
       case 'reciter':   this.drawReciter(a); break;
       case 'trio':      this.drawTrio(a); break;
       case 'dancer':    this.drawDancer(state.n||1, a); break;
+      case 'longways':  this.drawLongwaysDance(a); break;
       case 'announcer': this.drawAnnouncer(); break;
     }
 
@@ -799,6 +854,12 @@ const ACTS = [
     announce:"Pedwarawd — 'Ar hyd y nos'. Cân nos enwocaf Cymru.",
   },
   // ── DAWNS WERIN ────────────────────────────────
+  {
+    type:'longways', spotMode:'choir', music:'dance',
+    name:"💃 Jac y do — Bl 1, 2, 3 💃",
+    banner:'JAC Y DO',
+    announce:"Dawns i blant ysgol gynradd Bl 1, 2 a 3 — 'Jac y do'. Pump par yn dawnsio'r longways set!",
+  },
   {
     type:'dancer', n:1, spotMode:'center', music:'dance',
     name:"💃 Dawns 12–15 oed: Hoffedd ap Hywel 💃",
