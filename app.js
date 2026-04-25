@@ -211,10 +211,47 @@ const M = {
     ], bpm,'triangle',.085);
   },
   recitation(s) {
+    const bpm = 96;
     s.track([
-      ['G4',5],['R',1],['F4',3],['G4',1],['R',1],
-      ['A4',5],['R',1],['G4',5],['R',1],
-    ], 48,'triangle',.055);
+      // phrase 1
+      ['G4',.4],['R',.25],['G4',.4],['R',.2],['A4',.6],['R',.55],
+      ['G4',.4],['R',.2],['F4',.4],['R',.2],['G4',.7],['R',.85],
+      // phrase 2
+      ['A4',.4],['R',.25],['A4',.4],['R',.2],['B4',.6],['R',.5],
+      ['A4',.4],['R',.2],['G4',.4],['R',.2],['F4',.4],['R',.9],
+      // phrase 3 — descend
+      ['G4',.4],['R',.2],['F4',.4],['R',.25],['E4',.6],['R',.6],
+      ['F4',.4],['R',.2],['G4',.4],['R',.2],['A4',.7],['R',.8],
+      // phrase 4 — rise
+      ['A4',.4],['R',.25],['B4',.4],['R',.2],['A4',.6],['R',.5],
+      ['G4',.4],['R',.2],['A4',.5],['R',.3],['G4',.8],['R',.9],
+      // phrase 5 — final settle
+      ['G4',.4],['R',.25],['A4',.4],['R',.2],['G4',.9],['R',.65],
+      ['G4',.4],['R',.2],['G4',.4],['R',.25],['G4',1.1],['R',1.5],
+    ], bpm,'triangle',.055);
+  },
+  cydadrodd(s) {
+    const bpm = 96;
+    const phrases = [
+      ['G4',.4],['R',.25],['G4',.4],['R',.2],['A4',.6],['R',.55],
+      ['G4',.4],['R',.2],['F4',.4],['R',.2],['G4',.7],['R',.85],
+      ['A4',.4],['R',.25],['A4',.4],['R',.2],['B4',.6],['R',.5],
+      ['A4',.4],['R',.2],['G4',.4],['R',.2],['F4',.4],['R',.9],
+      ['G4',.4],['R',.2],['F4',.4],['R',.25],['E4',.6],['R',.6],
+      ['F4',.4],['R',.2],['G4',.4],['R',.2],['A4',.7],['R',.8],
+      ['A4',.4],['R',.25],['B4',.4],['R',.2],['A4',.6],['R',.5],
+      ['G4',.4],['R',.2],['A4',.5],['R',.3],['G4',.8],['R',.9],
+      ['G4',.4],['R',.25],['A4',.4],['R',.2],['G4',.9],['R',.65],
+      ['G4',.4],['R',.2],['G4',.4],['R',.25],['G4',1.1],['R',1.5],
+    ];
+    // lead voice
+    s.track(phrases, bpm,'triangle',.055);
+    // second voice a fifth up, slightly delayed
+    const upper = phrases.map(([n,d]) => [n==='R'?'R':n.replace(/(\d)$/,v=>+v+1), d]);
+    s.track(upper, bpm,'triangle',.032, 0.5, 0.07);
+    // third voice — low octave, more delayed
+    const lower = phrases.map(([n,d]) => [n==='R'?'R':n.replace(/(\d)$/,v=>+v-1), d]);
+    s.track(lower, bpm,'triangle',.025, 0.5, 0.14);
   },
   folk(s) {
     const bpm = 84;
@@ -307,6 +344,99 @@ const M = {
       ['C3',3],['G2',3],
     ], bpm,'triangle',.085);
   },
+  delynnewydd(s) {
+    const bpm = 126;
+    // Melody — violin: G major arpeggio figure (A), stepwise arch (B), forte drive (C)
+    s.track([
+      // A section ×2 (bars 3-6)
+      ['G4',.5],['B4',.5],['D5',.5],['G5',.5], ['A5',2],
+      ['G5',.5],['F#5',.5],['E5',.5],['D5',.5], ['B4',2],
+      ['G4',.5],['B4',.5],['D5',.5],['G5',.5], ['A5',1],['B5',1],
+      ['A5',.5],['G5',.5],['F#5',.5],['E5',.5], ['D5',2],
+      // B section (bars 7-10)
+      ['D5',1],['E5',1],['F#5',1],['G5',1],
+      ['A5',2],['G5',1],['F#5',1],
+      ['G5',1],['F#5',1],['E5',1],['D5',1],
+      ['G4',4],
+      // C section — forte, accented quarters (bars 11-14)
+      ['G4',1],['A4',1],['B4',1],['D5',1],
+      ['G5',2],['F#5',2],
+      ['G4',1],['A4',1],['B4',1],['D5',1],
+      ['G5',2],['G4',2],
+    ], bpm,'pulse',.12,.5);
+    // Harmony — diatonic thirds below the melody
+    s.track([
+      ['E4',.5],['G4',.5],['B4',.5],['E5',.5], ['F#5',2],
+      ['E5',.5],['D5',.5],['C5',.5],['B4',.5], ['G4',2],
+      ['E4',.5],['G4',.5],['B4',.5],['E5',.5], ['F#5',1],['G5',1],
+      ['F#5',.5],['E5',.5],['D5',.5],['C5',.5], ['B4',2],
+      ['B4',1],['C5',1],['D5',1],['E5',1],
+      ['F#5',2],['E5',1],['D5',1],
+      ['E5',1],['D5',1],['C5',1],['B4',1],
+      ['E4',4],
+      ['E4',1],['F#4',1],['G4',1],['B4',1],
+      ['E5',2],['D5',2],
+      ['E4',1],['F#4',1],['G4',1],['B4',1],
+      ['E5',2],['E4',2],
+    ], bpm,'pulse',.07,.125);
+    // Bass — root–fifth quarter-note pulse
+    s.track([
+      ['G2',2],['D3',2],
+      ['G2',2],['D3',2],
+      ['G2',2],['D3',2],
+      ['D3',2],['G2',2],
+      ['G2',2],['D3',2],
+      ['D3',2],['A2',2],
+      ['G2',2],['D3',2],
+      ['G2',4],
+      ['G2',4],
+      ['D3',4],
+      ['G2',4],
+      ['G2',2],['D3',2],
+    ], bpm,'triangle',.085);
+  },
+  ceremoni(s) {
+    const bpm = 108;
+    // ─── Three fanfare calls (~7.1 s) ───────────────────────────────
+    s.track([
+      ['R',.5],
+      ['C5',.4],['E5',.4],['G5',.4],['C6',1.5],['R',1.3],   // call 1
+      ['C5',.4],['E5',.4],['G5',.4],['C6',1.5],['R',1.3],   // call 2
+      ['C5',.3],['E5',.3],['G5',.3],['C6',.5],['G5',.3],['C6',2.0],['R',.5], // call 3
+      // ─── Processional ─────────────────────────────────────────────
+      ['G4',1],['A4',1],['B4',1],['C5',2],
+      ['D5',1],['C5',1],['B4',2],
+      ['A4',1],['G4',1],['A4',1],['B4',1],
+      ['G4',4],
+      // ─── Dance ────────────────────────────────────────────────────
+      ['G5',.5],['A5',.5],['G5',.5],['F#5',.5],['G5',2],
+      ['A5',.5],['B5',.5],['A5',.5],['G5',.5],['A5',2],
+      ['D5',.5],['E5',.5],['F#5',.5],['G5',.5],['A5',2],
+      ['G5',1],['F#5',1],['E5',1],['D5',1],
+      ['G5',1],['A5',1],['G5',.5],['F#5',.5],['G5',2],
+      ['G5',4],
+    ], bpm,'square',.15);
+    // ─── Harmony + bass enter after calls (~7.1 s) ──────────────────
+    s.track([
+      ['E5',1],['F#5',1],['G5',1],['A5',2],['B5',1],['A5',1],['G5',2],
+      ['F#5',1],['E5',1],['F#5',1],['G5',1],['E5',4],
+      ['E5',.5],['F#5',.5],['E5',.5],['D5',.5],['E5',2],
+      ['F#5',.5],['G5',.5],['F#5',.5],['E5',.5],['F#5',2],
+      ['B4',.5],['C5',.5],['D5',.5],['E5',.5],['F#5',2],
+      ['E5',1],['D5',1],['C5',1],['B4',1],
+      ['E5',1],['F#5',1],['E5',.5],['D5',.5],['E5',2],
+      ['E5',4],
+    ], bpm,'pulse',.07,.125, 7.1);
+    s.track([
+      ['C3',2],['G2',2],['C3',2],['G2',2],
+      ['G2',2],['D3',2],['C3',2],['G2',2],['G2',4],
+      ['C3',1],['G2',1],['C3',1],['G2',1],
+      ['C3',2],['G3',2],['C3',2],['G2',2],
+      ['F3',1],['C3',1],['G2',1],['D3',1],
+      ['G2',1],['G3',1],['C3',1],['G2',1],
+      ['C3',4],
+    ], bpm,'triangle',.085, 0.5, 7.1);
+  },
 };
 
 // ─────────────────────────────────────────────
@@ -326,31 +456,117 @@ class Rend {
   drawScene() {
     this.f++;
     const cx = this.cx;
-    this.px(0,0,256,224,'#06000e');
+    // Deep teal-purple void (Monkey Island twilight)
+    this.px(0,0,256,224,'#04060f');
+
+    // Back wall — cool gradient: deep indigo at top → muted teal-violet near the boards
     for (let y=0;y<126;y++) {
-      const lum = Math.round(14 + y*0.06);
-      this.px(0,y,256,1,`rgb(${lum},${Math.round(lum*.4)},${lum+6})`);
+      const p = y/126;
+      const r = Math.round( 8 + p*22);
+      const g = Math.round( 6 + p*30);
+      const b = Math.round(28 + p*44);
+      this.px(0,y,256,1,`rgb(${r},${g},${b})`);
     }
-    for (let x=38;x<218;x+=44)
-      this.px(x,0,2,126,`rgba(255,220,120,0.04)`);
+    // Distant warm wall sconces glowing through the gloom
+    for (let x=38;x<218;x+=44) {
+      this.px(x,0,2,126,'rgba(255,180,90,0.05)');
+      this.px(x-1,52,4,8,'rgba(255,170,70,0.10)');
+    }
+    // Cool back-wall shadow pooling at the floor seam (contrast under the boards)
+    const shadeG = cx.createLinearGradient(0,108,0,126);
+    shadeG.addColorStop(0,'rgba(0,0,0,0)');
+    shadeG.addColorStop(1,'rgba(8,4,18,0.55)');
+    cx.fillStyle = shadeG; cx.fillRect(0,108,256,18);
 
-    const pk=['#58360a','#683e0e','#784812','#603c0c'];
+    // Stage boards — warm amber, but the plank palette darkens toward the wings for contrast
+    const pk=['#603a0e','#724814','#82541a','#6a4010'];
     for (let x=0;x<256;x+=4) this.px(x,126,4,62,pk[(x/4)%4]);
-    this.px(0,126,256,1,'#986018');
+    this.px(0,126,256,1,'#a86c20');
+    // Plank seams (subtle vertical highlights catching the spot)
     for (let x=0;x<256;x+=12)
-      this.px(x,127,2,60,`rgba(255,200,80,0.04)`);
+      this.px(x,127,2,60,'rgba(255,210,110,0.05)');
 
-    this.px(0,185,256,4,'#301808');
-    this.px(0,188,256,3,'#1a0c04');
+    // Celtic medallion painted on the boards — concentric perspective rings,
+    // interlaced lattice, triskele core. Drawn before the side-wash so the
+    // wings still recede into shadow.
+    this.drawCelticFloor();
 
+    // Cool side-wash on the boards — darkens left/right edges, leaving center lit
+    const sideL = cx.createLinearGradient(0,126,90,126);
+    sideL.addColorStop(0,'rgba(10,8,30,0.55)');
+    sideL.addColorStop(1,'rgba(10,8,30,0)');
+    cx.fillStyle = sideL; cx.fillRect(0,126,90,62);
+    const sideR = cx.createLinearGradient(166,126,256,126);
+    sideR.addColorStop(0,'rgba(10,8,30,0)');
+    sideR.addColorStop(1,'rgba(10,8,30,0.55)');
+    cx.fillStyle = sideR; cx.fillRect(166,126,90,62);
+
+    // Footlight trough
+    this.px(0,185,256,4,'#2a1408');
+    this.px(0,188,256,3,'#160a04');
+
+    // Footlights — brass housing, warm bulb, halo, and spill onto the boards
     for (let i=0;i<8;i++) {
       const lx=14+i*32;
-      const fl=0.5+0.5*Math.sin(this.f*.09+i*.9);
-      this.px(lx-1,183,3,2,`rgba(255,215,90,${fl*.7})`);
-      this.px(lx-3,182,7,2,`rgba(255,200,70,${fl*.18})`);
+      const fl=0.55+0.45*Math.sin(this.f*.09+i*.9);
+      // Brass housing dome
+      this.px(lx-3, 184, 7, 1, '#2a1808');         // base shadow
+      this.px(lx-3, 183, 7, 2, '#5a3814');         // brass body
+      this.px(lx-2, 182, 5, 1, '#8a5e22');         // brass mid
+      this.px(lx-1, 181, 3, 1, '#b88240');         // brass top rim
+      // Bulb glow inside the dome
+      this.px(lx-1, 183, 3, 1, `rgba(255,235,150,${fl*.95})`);
+      this.px(lx,   182, 1, 1, `rgba(255,250,210,${fl})`);
+      // Outer halo
+      this.px(lx-3, 181, 7, 2, `rgba(255,200,80,${fl*.22})`);
+      // Spill upward onto the planks
+      const sp = cx.createLinearGradient(lx,184,lx,150);
+      sp.addColorStop(0,`rgba(255,180,70,${fl*.22})`);
+      sp.addColorStop(1,'rgba(255,180,70,0)');
+      cx.fillStyle = sp; cx.fillRect(lx-12,150,24,34);
     }
 
     this.px(0,191,256,33,'#02000a');
+  }
+
+  drawCelticFloor() {
+    const cx = this.cx;
+    const ccx = 128, ccy = 156;
+    cx.save();
+    // Three concentric perspective rings (oval = floor in NES projection)
+    cx.lineWidth = 1;
+    for (const [r, a] of [[46,.18],[36,.24],[26,.30]]) {
+      cx.strokeStyle = `rgba(210,160,55,${a})`;
+      cx.beginPath();
+      cx.ellipse(ccx, ccy, r, Math.round(r*.32), 0, 0, Math.PI*2);
+      cx.stroke();
+    }
+    // Interlaced knotwork: 8 quadratic arcs woven between the outer two rings
+    cx.strokeStyle = 'rgba(225,170,60,0.22)';
+    for (let i = 0; i < 8; i++) {
+      const a1 = i * Math.PI / 4;
+      const a2 = a1 + Math.PI / 4;
+      const x1 = ccx + Math.cos(a1) * 41;
+      const y1 = ccy + Math.sin(a1) * 13;
+      const x2 = ccx + Math.cos(a2) * 41;
+      const y2 = ccy + Math.sin(a2) * 13;
+      const cxp = ccx + Math.cos(a1 + Math.PI/8) * 22;
+      const cyp = ccy + Math.sin(a1 + Math.PI/8) * 6;
+      cx.beginPath();
+      cx.moveTo(x1, y1);
+      cx.quadraticCurveTo(cxp, cyp, x2, y2);
+      cx.stroke();
+    }
+    // Triskele core — three small spirals around a gold gem
+    cx.fillStyle = 'rgba(240,190,80,0.45)';
+    for (let i = 0; i < 3; i++) {
+      const a = i * Math.PI * 2 / 3;
+      cx.fillRect(Math.round(ccx + Math.cos(a)*6) - 1,
+                  Math.round(ccy + Math.sin(a)*2) - 1, 2, 2);
+    }
+    cx.fillStyle = 'rgba(255,220,120,0.7)';
+    cx.fillRect(ccx-1, ccy-1, 2, 2);
+    cx.restore();
   }
 
   drawRisers() {
@@ -369,10 +585,29 @@ class Rend {
       this.px(i,0,1,122+sway,sh[i%4]);
       this.px(220+i,0,1,122+sway,sh[i%4]);
     }
+    // Curtain inner highlight catching the spot rig
+    for (let i=0;i<4;i++) {
+      this.px(32-i, 18+i*2, 1, 90, `rgba(255,180,120,${0.06+i*0.02})`);
+      this.px(220+i, 18+i*2, 1, 90, `rgba(255,180,120,${0.06+i*0.02})`);
+    }
+    // Tasseled gold tiebacks at the proscenium sides
+    for (const tx of [30, 222]) {
+      this.px(tx-1, 78, 6, 2, '#a87820');     // rope band
+      this.px(tx-1, 78, 6, 1, '#d8a848');     // rope highlight
+      this.px(tx,   80, 4, 6, '#8a6018');     // tassel body
+      this.px(tx+1, 80, 2, 6, '#c89030');     // tassel highlight
+      this.px(tx,   86, 4, 1, '#5a3810');     // tassel base
+      this.px(tx+1, 87, 2, 2, '#d8a848');     // gold bead
+    }
     this.px(0,0,256,7,'#5a1622');
     this.px(0,0,256,2,'#7e2030');
     this.px(0,6,256,2,'#a07828');
     for (let x=36;x<220;x+=10) { this.px(x,7,4,6,'#58101e'); this.px(x+1,12,2,2,'#441020'); }
+    // Scalloped gold trim under the valance
+    for (let x=36;x<220;x+=10) {
+      this.px(x+1, 13, 2, 1, '#c89030');
+      this.px(x+2, 14, 1, 1, '#a07020');
+    }
     this.px(20,11,220,2,'#1e1e2e');
     for (let x=44;x<216;x+=38) {
       this.px(x,11,5,6,'#28283c');
@@ -382,31 +617,64 @@ class Rend {
 
   drawSpots(mode) {
     const cx = this.cx, f = this.f;
+    // Volumetric light shafts from the rig — warm cones cutting through the cool air
     for (let lx=44;lx<216;lx+=38) {
-      const g = cx.createLinearGradient(lx,18,lx,126);
-      g.addColorStop(0,`rgba(255,240,150,0.07)`);
-      g.addColorStop(1,'rgba(255,240,150,0)');
-      cx.fillStyle=g; cx.fillRect(lx-18,18,36,108);
+      const flick = 0.85 + 0.15*Math.sin(f*.07 + lx);
+      // Cone shape: narrow at the lamp, fanning out toward the boards
+      cx.save();
+      cx.fillStyle = `rgba(255,225,140,${0.09*flick})`;
+      cx.beginPath();
+      cx.moveTo(lx-3, 18);
+      cx.lineTo(lx+3, 18);
+      cx.lineTo(lx+22, 188);
+      cx.lineTo(lx-22, 188);
+      cx.closePath();
+      cx.fill();
+      // Hotter inner core
+      cx.fillStyle = `rgba(255,240,180,${0.07*flick})`;
+      cx.beginPath();
+      cx.moveTo(lx-1, 18);
+      cx.lineTo(lx+1, 18);
+      cx.lineTo(lx+10, 188);
+      cx.lineTo(lx-10, 188);
+      cx.closePath();
+      cx.fill();
+      cx.restore();
     }
     if (mode==='choir') {
-      const g = cx.createRadialGradient(128,140,4,128,140,88);
-      g.addColorStop(0,'rgba(255,240,170,0.15)');
+      const g = cx.createRadialGradient(128,140,4,128,140,92);
+      g.addColorStop(0,`rgba(255,236,170,${.28+.04*Math.sin(f*.04)})`);
+      g.addColorStop(0.55,'rgba(255,210,130,0.08)');
       g.addColorStop(1,'rgba(0,0,0,0)');
-      cx.fillStyle=g; cx.fillRect(42,90,172,100);
+      cx.fillStyle=g; cx.fillRect(38,86,180,108);
     } else if (mode==='duo') {
       for (const sx of [100,158]) {
-        const g = cx.createRadialGradient(sx,150,3,sx,150,30);
-        g.addColorStop(0,`rgba(255,248,200,${.2+.04*Math.sin(f*.03)})`);
+        const g = cx.createRadialGradient(sx,150,3,sx,150,34);
+        g.addColorStop(0,`rgba(255,242,190,${.34+.05*Math.sin(f*.03)})`);
+        g.addColorStop(0.6,'rgba(255,210,130,0.10)');
         g.addColorStop(1,'rgba(0,0,0,0)');
-        cx.fillStyle=g; cx.fillRect(sx-30,120,60,60);
+        cx.fillStyle=g; cx.fillRect(sx-34,118,68,64);
       }
-    } else {
-      const g = cx.createRadialGradient(128,152,3,128,152,34);
-      g.addColorStop(0,`rgba(255,252,200,${.22+.04*Math.sin(f*.04)})`);
-      g.addColorStop(0.6,'rgba(255,235,170,0.06)');
+    } else if (mode==='announcer') {
+      const g = cx.createRadialGradient(51,148,3,51,148,46);
+      g.addColorStop(0,`rgba(255,250,210,${.42+.06*Math.sin(f*.04)})`);
+      g.addColorStop(0.5,'rgba(255,228,160,0.13)');
       g.addColorStop(1,'rgba(0,0,0,0)');
-      cx.fillStyle=g; cx.fillRect(96,118,66,68);
+      cx.fillStyle=g; cx.fillRect(2,104,98,80);
+    } else {
+      const g = cx.createRadialGradient(128,152,3,128,152,40);
+      g.addColorStop(0,`rgba(255,246,190,${.36+.05*Math.sin(f*.04)})`);
+      g.addColorStop(0.55,'rgba(255,218,140,0.10)');
+      g.addColorStop(1,'rgba(0,0,0,0)');
+      cx.fillStyle=g; cx.fillRect(90,114,76,74);
     }
+
+    // Cool corner vignette — Monkey Island twilight pulled in around the proscenium
+    const vg = cx.createRadialGradient(128,118,40,128,118,170);
+    vg.addColorStop(0,'rgba(0,0,0,0)');
+    vg.addColorStop(0.6,'rgba(8,6,28,0.20)');
+    vg.addColorStop(1,'rgba(4,2,18,0.65)');
+    cx.fillStyle = vg; cx.fillRect(0,0,256,190);
   }
 
   drawBanner(text) {
@@ -423,16 +691,100 @@ class Rend {
   }
 
   person(x, footY, skin, body) {
-    this.px(x-4,footY,10,2,'rgba(0,0,0,.4)');
-    this.px(x-3,footY-13,8,13,body);
-    this.px(x-2,footY-12,2,10,this.lit(body,20));
-    this.px(x-1,footY-14,4,2,'rgba(255,255,255,0.15)');
-    this.px(x-2,footY-19,5,5,skin);
-    this.px(x-2,footY-20,5,2,'#160800');
-    this.px(x-1,footY-18,1,1,'#080808');
-    this.px(x+1,footY-18,1,1,'#080808');
-    this.px(x-2,footY-2,2,2,'#180a00');
-    this.px(x+1,footY-2,2,2,'#180a00');
+    const bLit  = this.lit(body, 25);
+    const bDk   = this.lit(body, -25);
+    const sDk   = this.lit(skin, -30);
+    const HAIR  = '#1c0e04';
+    const HAIRH = '#3a1c08';
+
+    // Shadow
+    this.px(x-5, footY, 11, 2, 'rgba(0,0,0,0.40)');
+
+    // ── Lower body ───────────────────────────
+    // Coat/jacket (12 tall, 8 wide, x-3..x+4)
+    this.px(x-3, footY-14, 8, 12, body);
+    this.px(x-3, footY-14, 1, 12, bLit);          // left lit edge
+    this.px(x+4, footY-14, 1, 12, bDk);           // right shaded edge
+    // Belt
+    this.px(x-3, footY-4, 8, 1, '#2a1408');
+    this.px(x-3, footY-4, 1, 1, '#a07820');       // belt buckle highlight
+    this.px(x,   footY-4, 1, 1, '#d8a848');       // central buckle
+    // Buttons down center
+    this.px(x, footY-7,  1, 1, '#d8a830');
+    this.px(x, footY-10, 1, 1, '#d8a830');
+    // Lapels — V opening showing white shirt
+    this.px(x-1, footY-14, 3, 1, '#e8e0c8');      // shirt collar
+    this.px(x,   footY-13, 1, 1, '#c8c0a8');      // shirt fold
+    this.px(x-2, footY-13, 1, 1, bDk);            // left lapel notch
+    this.px(x+2, footY-13, 1, 1, bDk);            // right lapel notch
+    // Feet
+    this.px(x-2, footY-2, 2, 2, '#180a00');
+    this.px(x+1, footY-2, 2, 2, '#180a00');
+    this.px(x-2, footY-2, 2, 1, '#2a1408');       // shoe shine
+    this.px(x+1, footY-2, 2, 1, '#2a1408');
+
+    // ── Neck ─────────────────────────────────
+    this.px(x-1, footY-15, 3, 1, sDk);
+
+    // ── Head (7 wide × 6 tall, x-3..x+3, footY-22..footY-17) ──
+    this.px(x-3, footY-22, 7, 6, skin);
+    // Sideburns drop one row past head sides
+    this.px(x-3, footY-21, 1, 3, HAIR);
+    this.px(x+3, footY-21, 1, 3, HAIR);
+
+    // ── Hair (crown + fringe, sits on top of head) ──
+    this.px(x-3, footY-23, 7, 1, HAIR);            // fringe / hairline
+    this.px(x-2, footY-24, 5, 1, HAIR);            // crown
+    this.px(x-1, footY-25, 3, 1, HAIR);            // top tuft
+    this.px(x-1, footY-24, 3, 1, HAIRH);           // crown highlight
+    this.px(x,   footY-25, 1, 1, 'rgba(255,220,140,0.6)'); // warm catch
+
+    // ── Face features (minimal — just eyes + mouth) ──
+    this.px(x-1, footY-20, 1, 1, '#1a0e08');       // left eye
+    this.px(x+1, footY-20, 1, 1, '#1a0e08');       // right eye
+    this.px(x,   footY-18, 1, 1, '#5a1c10');       // mouth
+
+    // ── Spotlight rim (right edge) ───────────
+    this.px(x+4, footY-14, 1, 12, 'rgba(255,210,140,0.22)');
+    this.px(x+3, footY-22, 1, 4,  'rgba(255,210,140,0.18)');
+  }
+
+  // Back-facing figure: no face, full hair on the head, plain coat back
+  personBack(x, footY, body) {
+    const bLit = this.lit(body, 25);
+    const bDk  = this.lit(body, -25);
+    const HAIR = '#1c0e04';
+    const HAIRH = '#3a1c08';
+
+    this.px(x-5, footY, 11, 2, 'rgba(0,0,0,0.40)');
+
+    // Coat (back view — center seam, no buttons/lapels)
+    this.px(x-3, footY-14, 8, 12, body);
+    this.px(x-3, footY-14, 1, 12, bLit);
+    this.px(x+4, footY-14, 1, 12, bDk);
+    this.px(x,   footY-14, 1, 12, bDk);             // center seam down back
+    // Back collar
+    this.px(x-2, footY-15, 5, 1, '#e8e0c8');
+    // Feet
+    this.px(x-2, footY-2, 2, 2, '#180a00');
+    this.px(x+1, footY-2, 2, 2, '#180a00');
+
+    // Neck (back)
+    this.px(x-1, footY-16, 3, 1, '#6a3818');
+
+    // Back of head — fully covered by hair (no face)
+    this.px(x-3, footY-22, 7, 6, HAIR);
+    this.px(x-3, footY-23, 7, 1, HAIR);
+    this.px(x-2, footY-24, 5, 1, HAIR);
+    this.px(x-1, footY-25, 3, 1, HAIR);
+    // Crown highlight + warm catch
+    this.px(x-1, footY-23, 3, 1, HAIRH);
+    this.px(x,   footY-25, 1, 1, 'rgba(255,220,140,0.55)');
+    // Subtle nape shadow
+    this.px(x-2, footY-17, 5, 1, '#0e0602');
+
+    // Right rim
+    this.px(x+4, footY-14, 1, 12, 'rgba(255,210,140,0.22)');
   }
 
   mic(x, y) {
@@ -445,6 +797,85 @@ class Rend {
     this.px(x-6,y-5,14,4,'#5e3212');
     this.px(x-6,y-2,14,1,'#7e4e1e');
     this.px(x-4,y-4,10,3,'rgba(255,255,220,0.2)');
+  }
+  // Wooden reading lectern. hw = half-width of the desk surface.
+  // Reading surface sits at chest height (footY-12), so figures' heads/shoulders show above it.
+  atril(x, footY, hw=5) {
+    const w = hw*2+1;
+    // Desk surface — at chest height, heads visible above
+    this.px(x-hw-1, footY-13, w+2, 1, '#7e5020');  // front edge highlight
+    this.px(x-hw-1, footY-12, w+2, 4, '#4a2810');  // desk body
+    this.px(x-hw,   footY-9,  w,   1, 'rgba(255,255,200,0.12)'); // paper glow
+    // Short stem
+    this.px(x-1, footY-8, 3, 6, '#3a1c08');
+    this.px(x-1, footY-8, 1, 6, '#6a3818');
+    // Base
+    this.px(x-hw,   footY-2, w,   2, '#2e1608');
+    this.px(x-hw,   footY-2, w,   1, '#5a3010');
+  }
+  // Piano stool: drawn relative to the keyboard position
+  pianoChair(px, py) {
+    const sx = px+10, sy = py+27;
+    this.px(sx,   sy,   12, 1, '#6a3818');  // seat top highlight
+    this.px(sx,   sy+1, 12, 3, '#3a1c08');  // seat body
+    this.px(sx+1, sy+4,  2, 6, '#2a1408');  // left leg
+    this.px(sx+8, sy+4,  2, 6, '#2a1408');  // right leg
+    this.px(sx,   sy+8,  12,1, '#2a1408');  // leg brace
+  }
+  throne(x, footY) {
+    this.px(x-8, footY-22, 3, 20, '#6a4010');   // left pillar
+    this.px(x+5, footY-22, 3, 20, '#6a4010');   // right pillar
+    this.px(x-8, footY-22, 16, 3, '#b08820');   // top rail
+    this.px(x-8, footY-22, 16,  1, '#f0c040');  // gold highlight
+    this.px(x-7, footY-20, 14, 16, '#3a1e08');  // back panel
+    this.px(x-9, footY-5, 18, 4, '#8a5818');    // seat
+    this.px(x-9, footY-5, 18,  1, '#c89030');   // seat highlight
+    this.px(x-11, footY-15, 3, 12, '#9a6820');  // left armrest
+    this.px(x+8,  footY-15, 3, 12, '#9a6820');  // right armrest
+  }
+  drawPoetFigure(x, footY, anim) {
+    const ph   = this.f * .09;
+    const sway = anim ? Math.round(Math.sin(ph) * 1) : 0;
+    const bob  = anim ? Math.round(Math.sin(ph * .7) * .8) : 0;
+    const ox = x + sway, fy = footY + bob;
+    const skin = this.SKINS[2];
+    this.px(ox-5, fy+1, 11, 2, 'rgba(0,0,0,.35)');
+    // Royal blue robe
+    this.px(ox-5, fy-12, 11, 12, '#1a2480');
+    this.px(ox-4, fy-5,   9,  5, '#0e1870');
+    this.px(ox-4, fy-12,  9,  1, '#c89020');  // gold hem
+    // Gold vest
+    this.px(ox-2, fy-16, 5, 5, '#1a2480');
+    this.px(ox-1, fy-16, 3, 5, '#8a6c18');
+    // Sleeves
+    this.px(ox-4, fy-15, 2, 4, '#e8e0c8');
+    this.px(ox+2, fy-15, 2, 4, '#e8e0c8');
+    // Head + hair
+    this.px(ox-2, fy-21, 5, 5, skin);
+    this.px(ox-2, fy-22, 5, 2, '#3a1c00');
+    this.px(ox-1, fy-19, 1, 1, '#080808');
+    this.px(ox+1, fy-19, 1, 1, '#080808');
+    // Bardic wreath + gold gem
+    this.px(ox-3, fy-23, 7, 2, '#2a5c18');
+    this.px(ox-2, fy-24, 5, 1, '#3a7c22');
+    this.px(ox,   fy-25, 1, 2, '#f0c030');
+    // Feet
+    this.px(ox-2, fy-1, 2, 2, '#18100a');
+    this.px(ox+1, fy-1, 2, 2, '#18100a');
+    // Arms: raised when dancing, relaxed when seated
+    if (anim) {
+      this.px(ox-5, fy-16, 3, 2, '#e8e0c8');
+      this.px(ox-7, fy-18, 3, 2, '#e8e0c8');
+      this.px(ox-8, fy-20, 2, 2, skin);
+      this.px(ox+3, fy-16, 3, 2, '#e8e0c8');
+      this.px(ox+5, fy-18, 3, 2, '#e8e0c8');
+      this.px(ox+7, fy-20, 2, 2, skin);
+    } else {
+      this.px(ox-5, fy-14, 3, 2, '#e8e0c8');
+      this.px(ox-6, fy-12, 2, 2, skin);
+      this.px(ox+3, fy-14, 3, 2, '#e8e0c8');
+      this.px(ox+5, fy-12, 2, 2, skin);
+    }
   }
   violin(x, y) {
     this.px(x+5,y-16,4,10,'#6e2808');
@@ -461,7 +892,7 @@ class Rend {
     this.px(x+8,y-11,1,2,'#cc2200');
   }
   piano() {
-    const px=186, py=110;
+    const px=200, py=110;
     this.px(px,py,35,24,'#101010');
     this.px(px-2,py-4,39,5,'#060606');
     this.px(px,py,35,2,'#222');
@@ -523,13 +954,23 @@ class Rend {
   }
 
   drawAnnouncer() {
-    const by=Math.round(Math.sin(this.f*.05)*.5);
-    this.mic(127,132+by); this.person(128,132+by,this.sk(5),'#202020');
+    const by1 = Math.round(Math.sin(this.f * .05) * .5);
+    const by2 = Math.round(Math.sin(this.f * .055 + 0.8) * .5);
+    // Both presenters share one wide lectern — draw it centred between them
+    const cx = 38, footY = 160;
+    // Figures drawn first so the atril occludes them (appears in front)
+    this.person(cx - 9, footY + by1, this.sk(0), '#7a2068');
+    this.person(cx + 9, footY + by2, this.sk(3), '#1a1a2e');
+    this.atril(cx, footY, 13);
   }
 
   drawPianist() {
     this.piano();
-    this.person(203,132,this.sk(0),'#161630');
+    const px = 200, py = 110;
+    // Chair drawn first so the pianist sits on top of it
+    this.pianoChair(px, py);
+    // Pianist closer to the front of the stage, seated on the stool
+    this.personBack(217, 145, '#161630');
   }
 
   drawTrio(anim=false) {
@@ -712,6 +1153,105 @@ class Rend {
     }
   }
 
+  drawCeremoniScene(t, anim) {
+    const cx   = this.cx;
+    const ease = p => p < .5 ? 2*p*p : 1-Math.pow(-2*p+2,2)/2;
+    const clamp01 = v => v < 0 ? 0 : v > 1 ? 1 : v;
+    const lerp = (a,b,p) => a + (b-a)*p;
+
+    // Phase thresholds (seconds within performance)
+    //  0–7  : trumpet calls — empty throne, only trumpeter on stage
+    //  7–13 : folk procession enters from both wings
+    // 13–18 : poet rises from the public, walks in from right corner
+    // 18–22 : poet seated on the throne, court bows toward him
+    // 22–30 : poet rises and dances with the folk
+    const inCalls = t < 7;
+    const inFolk  = t >= 7  && t < 13;
+    const inPoet  = t >= 13 && t < 18;
+    const inSit   = t >= 18 && t < 22;
+    const inDance = t >= 22;
+
+    const folkP = clamp01((t - 7)  / 4);     // folk walk-in 0→1 over 4s
+    const poetP = clamp01((t - 13) / 4);     // poet walk-in 0→1 over 4s
+    const riseP = inDance ? ease(clamp01((t - 22) / 2)) : 0;
+
+    // Throne always present at center, slightly back
+    const throneX = 128, throneY = 132;
+
+    // Golden glow grows once the poet is approaching/seated
+    const glowA = Math.min(.22, Math.max(0, (t - 13) * .03));
+    if (glowA > 0) {
+      const g = cx.createRadialGradient(throneX, throneY-14, 2, throneX, throneY-14, 64);
+      g.addColorStop(0, `rgba(255,210,50,${glowA})`);
+      g.addColorStop(1, 'rgba(0,0,0,0)');
+      cx.fillStyle = g; cx.fillRect(48, 60, 160, 130);
+    }
+
+    // Celtic floor rings (once the folk arrive)
+    if (t >= 11) {
+      const rA = Math.min(.16, (t - 11) * .02);
+      for (let r = 10; r < 64; r += 12) {
+        cx.strokeStyle = `rgba(200,155,45,${rA})`;
+        cx.lineWidth = 1;
+        cx.beginPath();
+        cx.ellipse(throneX, throneY+4, r, Math.round(r*.34), 0, 0, Math.PI*2);
+        cx.stroke();
+      }
+    }
+
+    // Throne is always drawn — the poet remains seated through the celebration.
+    this.throne(throneX, throneY);
+
+    // Trumpeter at left during the calls only
+    if (inCalls) {
+      const by = anim ? Math.round(Math.sin(this.f*.08)*.4) : 0;
+      this.person(72, 134+by, this.SKINS[4], '#301458');
+      this.trumpet(64, 134+by);
+    }
+
+    // Folk procession — 6 figures stream in from both wings to flank the throne
+    // Targets are arranged in an arc around the throne
+    const folkTargets = [
+      {sx:-18, tx: 60,  idx:7},
+      {sx:-18, tx: 84,  idx:9},
+      {sx:-18, tx:104,  idx:3},
+      {sx:274, tx:152,  idx:2},
+      {sx:274, tx:172,  idx:10},
+      {sx:274, tx:196,  idx:11},
+    ];
+    if (!inCalls) {
+      for (const f of folkTargets) {
+        const fx = Math.round(lerp(f.sx, f.tx, folkP));
+        // Walking sway only while moving
+        const moving = folkP < 1;
+        const arms = moving ? {l:.2, r:.2} : (inDance ? {l:.6,r:.6} : {l:.85,r:.85});
+        this.drawFolkFigure(fx, 134, f.idx, (moving || (inDance && anim) || (!moving && anim)), arms);
+      }
+    }
+
+    // Poet — rises from the audience, escorted hand-in-hand to the throne.
+    // The poet himself is always dignified: he never raises his hands or dances.
+    if (inPoet) {
+      // Both escort and poet walk in from the right corner toward the throne.
+      // Escort walks slightly ahead (closer to the throne) leading the poet by the hand.
+      const escortX = Math.round(lerp(244, throneX + 12, poetP));
+      const poetX   = Math.round(lerp(256, throneX,      poetP));
+      // Escort: a folk figure with the inner arm extended back to "hold" the poet's hand
+      this.drawFolkFigure(escortX, 134, 8, false, {l:0, r:.45});
+      // Poet: relaxed, never animated
+      this.drawPoetFigure(poetX, 134, false);
+    } else if (inSit || inDance) {
+      // Seated on the throne for the rest of the ceremony. Poet does not dance.
+      this.drawPoetFigure(throneX, throneY - 1, false);
+      // Escort walks off-stage during the seated phase, gone before the dance
+      if (inSit) {
+        const sitP = clamp01((t - 18) / 4);  // 0→1 over the 4 s seated phase
+        const escortX = Math.round(lerp(throneX + 16, 274, sitP));
+        this.drawFolkFigure(escortX, 134, 8, anim, {l:.2, r:.2});
+      }
+    }
+  }
+
   drawAudience(applause=false) {
     const HC=['#0a0314','#14061e','#080a12','#04030c','#1c0a04','#120800'];
     const BC=['#040208','#07030c','#050506','#020204'];
@@ -765,7 +1305,7 @@ class Rend {
 
   render(state) {
     this.drawScene();
-    this.drawRisers();
+    if (state.actType !== 'ceremoni') this.drawRisers();
     this.drawCurtains();
     this.drawSpots(state.spotMode||'center');
     this.piano(); this.drawPianist();
@@ -781,6 +1321,7 @@ class Rend {
       case 'trio':      this.drawTrio(a); break;
       case 'dancer':    this.drawDancer(state.n||1, a); break;
       case 'longways':  this.drawLongwaysDance(a); break;
+      case 'ceremoni':  this.drawCeremoniScene(state.actT||0, a); break;
       case 'announcer': this.drawAnnouncer(); break;
     }
 
@@ -838,6 +1379,12 @@ const ACTS = [
     banner:'CADAIR',
     announce:"Gwobr Cadair yr Eisteddfod — cerdd ar y testun 'Yr Alwad'. Y gystadleuaeth fwyaf bwysig.",
   },
+  {
+    type:'ceremoni', spotMode:'center', music:'ceremoni', dur:30,
+    name:"✦ ✦  Seremoni'r Gadair  ✦ ✦",
+    banner:'CADAIR',
+    announce:"Y seremoni fwyaf — tri udgorn yn galw, a'r Prifardd yn codi o'r Gadair i ddawnsio'r dathlu Celtaidd.",
+  },
   // ── ADRODD ─────────────────────────────────────
   {
     type:'reciter', spotMode:'center', music:'recitation',
@@ -846,7 +1393,7 @@ const ACTS = [
     announce:"Prif-adroddiad yr Eisteddfod — 'Hon' gan T. H. Parry-Williams. Eiliad dawel ar y llwyfan.",
   },
   {
-    type:'choir', n:5, spotMode:'choir', music:'recitation',
+    type:'choir', n:5, spotMode:'choir', music:'cydadrodd',
     name:"♪ Cyd-adrodd: Noson Loergan Patagonia ♪",
     banner:'CYD-ADRODD',
     announce:"Cyd-adrodd agored — 'Noson Loergan Patagonia' gan Arel Hughes de Sarda.",
@@ -891,7 +1438,7 @@ const ACTS = [
   },
   // ── DAWNS WERIN ────────────────────────────────
   {
-    type:'longways', spotMode:'choir', music:'dance',
+    type:'longways', spotMode:'choir', music:'delynnewydd',
     name:"💃 Jac y do — Bl 1, 2, 3 💃",
     banner:'JAC Y DO',
     announce:"Dawns i blant ysgol gynradd Bl 1, 2 a 3 — 'Jac y do'. Pump par yn dawnsio'r longways set!",
@@ -976,7 +1523,7 @@ class Show {
       this.state.overlay = Math.max(0, 1 - this.timer/1.1);
       if (this.timer>1.4) {
         this.phase='announcing'; this.timer=0;
-        this.state.actType='announcer'; this.state.banner=null; this.state.spotMode='center';
+        this.state.actType='announcer'; this.state.banner=null; this.state.spotMode='announcer';
         this.state.phase='announcing';
         this.name('♪ ♪  EISTEDDFOD  ♪ ♪');
         this.sub(act.announce);
@@ -997,7 +1544,8 @@ class Show {
     }
     else if (this.phase==='performing') {
       this.state.overlay=0;
-      if (this.timer>20) {
+      this.state.actT = this.timer;
+      if (this.timer>(act.dur||20)) {
         this.phase='applause'; this.timer=0;
         this.state.phase='applause';
         this.state.banner=null;
@@ -1007,7 +1555,7 @@ class Show {
       }
     }
     else if (this.phase==='applause') {
-      if (this.timer>5.8) { this.phase='fade-out'; this.timer=0; }
+      if (this.timer>5.8) { this.phase='fade-out'; this.timer=0; this.state.phase='idle'; }
     }
     else if (this.phase==='fade-out') {
       this.state.overlay = Math.min(1, this.timer/.9);
