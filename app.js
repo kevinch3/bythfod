@@ -540,7 +540,7 @@ class Rend {
     });
   }
 
-  drawFolkFigure(x, footY, idx, anim) {
+  drawFolkFigure(x, footY, idx, anim, raise = {l: 0, r: 0}) {
     const phase  = this.f * .09 + idx * 1.3;
     const sway   = anim ? Math.round(Math.sin(phase) * 1) : 0;
     const bob    = anim ? Math.round(Math.sin(phase * .7) * .8) : 0;
@@ -583,10 +583,37 @@ class Rend {
     this.px(ox-3, fy-1, 3, 2, '#18100a');
     this.px(ox+1, fy-1-lift, 3, 2, '#18100a');
 
-    this.px(ox-10, fy-13, 8, 2, bl);
-    this.px(ox+3,  fy-13, 8, 2, bl);
-    this.px(ox-11, fy-13, 2, 2, skin);
-    this.px(ox+10, fy-13, 2, 2, skin);
+    // Right arm — 3 levels: horizontal / half-raised / fully raised
+    if (raise.r < 0.25) {
+      this.px(ox+3,  fy-14, 4, 2, bl);    // upper arm  (gap at ox+7 = elbow)
+      this.px(ox+7,  fy-13, 3, 2, bl);    // forearm    (gap at ox+10 = wrist)
+      this.px(ox+10, fy-13, 2, 2, skin);  // hand
+    } else if (raise.r < 0.65) {
+      this.px(ox+3,  fy-14, 3, 2, bl);    // shoulder
+      this.px(ox+5,  fy-16, 3, 2, bl);    // mid-arm stepping up-right
+      this.px(ox+7,  fy-17, 2, 2, skin);  // hand
+    } else {
+      this.px(ox+3,  fy-14, 2, 2, bl);    // near shoulder
+      this.px(ox+4,  fy-16, 2, 2, bl);    // lower arm
+      this.px(ox+5,  fy-18, 2, 2, bl);    // upper arm
+      this.px(ox+6,  fy-21, 2, 2, skin);  // hand (near head height)
+    }
+
+    // Left arm — mirror of right
+    if (raise.l < 0.25) {
+      this.px(ox-6,  fy-14, 4, 2, bl);    // upper arm  (gap at ox-7 = elbow)
+      this.px(ox-9,  fy-13, 3, 2, bl);    // forearm    (gap at ox-10 = wrist)
+      this.px(ox-11, fy-13, 2, 2, skin);  // hand
+    } else if (raise.l < 0.65) {
+      this.px(ox-5,  fy-14, 3, 2, bl);    // shoulder
+      this.px(ox-8,  fy-16, 3, 2, bl);    // mid-arm stepping up-left
+      this.px(ox-9,  fy-17, 2, 2, skin);  // hand
+    } else {
+      this.px(ox-4,  fy-14, 2, 2, bl);    // near shoulder
+      this.px(ox-5,  fy-16, 2, 2, bl);    // lower arm
+      this.px(ox-6,  fy-18, 2, 2, bl);    // upper arm
+      this.px(ox-7,  fy-21, 2, 2, skin);  // hand (near head height)
+    }
   }
 
   drawDancer(n=1, anim=false) {
@@ -657,21 +684,30 @@ class Rend {
       const bx = Math.round(xs[i] - cr * CROSS);
       const by = Math.round(yB - adv * (yB - yMid) + pass * 2);
 
-      // Two-arm bridge: arch the joined hands as a visible line
-      if (br > 0.05) {
-        const hy = Math.round(Math.min(ay, by)) - 13;
-        const lx = Math.min(ax, bx) + 10;
-        const rx = Math.max(ax, bx) - 11;
-        if (rx > lx) this.px(lx, hy, rx-lx, 2, `rgba(220,185,155,${br * .75})`);
-      }
+      // Bridge lifts both arms; right-shoulder cross lifts the reaching arm
+      const raiseA = {l: br, r: Math.min(1, br + cr * 0.35)};
+      const raiseB = {l: Math.min(1, br + cr * 0.35), r: br};
 
       // Draw farther figure first so nearer one paints on top
       if (ay <= by) {
-        this.drawFolkFigure(ax, ay, i*2,   anim);
-        this.drawFolkFigure(bx, by, i*2+1, anim);
+        this.drawFolkFigure(ax, ay, i*2,   anim, raiseA);
+        this.drawFolkFigure(bx, by, i*2+1, anim, raiseB);
       } else {
-        this.drawFolkFigure(bx, by, i*2+1, anim);
-        this.drawFolkFigure(ax, ay, i*2,   anim);
+        this.drawFolkFigure(bx, by, i*2+1, anim, raiseB);
+        this.drawFolkFigure(ax, ay, i*2,   anim, raiseA);
+      }
+
+      // Bridge arch: connect B's raised right hand to A's raised left hand.
+      // lOff/rOff are the pixel offsets to each hand's outer edge at each raise level;
+      // they match exactly the hand px() positions in drawFolkFigure.
+      if (br > 0.05) {
+        const [lOff, rOff, hOff] = br < 0.25 ? [12, 11, 13]
+                                  : br < 0.65 ? [ 9,  9, 17]
+                                  :             [ 8,  7, 21];
+        const lx = bx + lOff;
+        const rx = ax - rOff;
+        const hy = Math.round((ay + by) / 2) - hOff + 1;
+        if (rx > lx) this.px(lx, hy, rx - lx, 2, `rgba(220,185,155,${br * .85})`);
       }
     }
   }
