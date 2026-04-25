@@ -216,6 +216,97 @@ const M = {
       ['A4',5],['R',1],['G4',5],['R',1],
     ], 48,'triangle',.055);
   },
+  folk(s) {
+    const bpm = 84;
+    s.track([
+      ['G4',1],['A4',1],['B4',1],
+      ['C5',2],['B4',1],
+      ['A4',1],['G4',1],['A4',1],
+      ['G4',3],
+      ['D5',1],['D5',1],['C5',1],
+      ['B4',2],['A4',1],
+      ['G4',1],['A4',1],['B4',1],
+      ['G4',3],
+      ['E5',1],['E5',1],['D5',1],
+      ['C5',2],['B4',1],
+      ['A4',1],['B4',1],['C5',1],
+      ['D5',3],
+      ['G4',1],['A4',1],['B4',1],
+      ['C5',1],['B4',1],['A4',1],
+      ['G4',1],['A4',1],['G4',1],
+      ['G4',3],
+    ], bpm,'pulse',.12,.5);
+    s.track([
+      ['G3',3],['C3',3],['D3',3],['G2',3],
+      ['G3',3],['G3',3],['G2',3],['G2',3],
+      ['C3',3],['G3',3],['F3',3],['G3',3],
+      ['G2',3],['C3',3],['G2',3],['G2',3],
+    ], bpm,'triangle',.07);
+  },
+  dance(s) {
+    const bpm = 138;
+    s.track([
+      ['E5',.5],['D5',.5],['C5',.5],['D5',.5],
+      ['E5',.5],['E5',.5],['E5',1],
+      ['D5',.5],['D5',.5],['D5',1],
+      ['E5',.5],['G5',.5],['G5',1],
+      ['E5',.5],['D5',.5],['C5',.5],['D5',.5],
+      ['E5',.5],['E5',.5],['E5',.5],['E5',.5],
+      ['D5',.5],['E5',.5],['D5',.5],['C5',.5],
+      ['C5',2],
+      ['G4',.5],['A4',.5],['B4',.5],['C5',.5],
+      ['D5',.5],['E5',.5],['F5',.5],['G5',.5],
+      ['A5',1],['G5',.5],['F5',.5],
+      ['E5',1],['D5',1],
+      ['C5',.5],['D5',.5],['E5',.5],['F5',.5],
+      ['E5',.5],['D5',.5],['C5',.5],['B4',.5],
+      ['A4',.5],['B4',.5],['C5',.5],['D5',.5],
+      ['C5',2],
+    ], bpm,'square',.10);
+    s.track([
+      ['C3',1],['G2',1],['C3',1],['G2',1],
+      ['G2',1],['G3',1],['C3',2],
+      ['C3',1],['G2',1],['C3',1],['G2',1],
+      ['C3',2],['G2',2],
+      ['F3',1],['C3',1],['F3',1],['C3',1],
+      ['G2',2],['G3',2],
+      ['C3',1],['G2',1],['G3',1],['G2',1],
+      ['C3',4],
+    ], bpm,'triangle',.08);
+  },
+  hymn(s) {
+    const bpm = 60;
+    s.track([
+      ['G4',2],['G4',1],['A4',2],['G4',1],
+      ['F4',2],['E4',1],['D4',3],
+      ['D4',2],['E4',1],['F4',2],['E4',1],
+      ['D4',2],['C4',1],['D4',3],
+      ['G4',2],['A4',1],['B4',2],['A4',1],
+      ['C5',2],['B4',1],['A4',3],
+      ['A4',2],['G4',1],['F4',2],['G4',1],
+      ['E4',2],['D4',1],['C4',3],
+    ], bpm,'pulse',.11,.5);
+    s.track([
+      ['E4',3],['F4',3],
+      ['C4',3],['B3',3],
+      ['B3',3],['C4',3],
+      ['A3',3],['B3',3],
+      ['C4',3],['F4',3],
+      ['E4',3],['F4',3],
+      ['F4',3],['D4',3],
+      ['C4',3],['G3',3],
+    ], bpm,'pulse',.07,.125);
+    s.track([
+      ['C3',3],['F2',3],
+      ['G2',3],['G3',3],
+      ['G2',3],['C3',3],
+      ['D3',3],['G2',3],
+      ['C3',3],['F3',3],
+      ['A2',3],['D3',3],
+      ['D3',3],['G2',3],
+      ['C3',3],['G2',3],
+    ], bpm,'triangle',.085);
+  },
 };
 
 // ─────────────────────────────────────────────
@@ -441,6 +532,34 @@ class Rend {
     this.person(203,132,this.sk(0),'#161630');
   }
 
+  drawTrio(anim=false) {
+    [100, 128, 156].forEach((x, i) => {
+      const by = anim ? Math.round(Math.sin(this.f*.065 + i*1.1)*.5) : 0;
+      this.mic(x-1, 132+by);
+      this.person(x, 132+by, this.sk(i*2+1), this.rb(i));
+    });
+  }
+
+  drawDancer(n=1, anim=false) {
+    const xs = n === 2 ? [100, 156] : [128];
+    const costumes = ['#c03068','#183090'];
+    xs.forEach((x, i) => {
+      const phase = this.f * .08 + i * 1.4;
+      const sway  = anim ? Math.round(Math.sin(phase) * 1.5) : 0;
+      const by    = anim ? Math.round(Math.sin(phase) * .8) : 0;
+      const footY = 132 + by;
+      const col   = costumes[i % 2];
+      // Wide skirt/costume silhouette drawn before the body
+      this.px(x - 7 + sway, footY - 9, 16, 9, col);
+      this.px(x - 5 + sway, footY - 13, 12, 5, col);
+      this.person(x + sway, footY, this.sk(i * 2 + 1), col);
+      // One arm up, one arm down — swing alternates with phase
+      const swing = Math.round(Math.sin(phase) * 5);
+      this.px(x - 10 + sway, footY - 13 - swing, 6, 2, this.sk(i * 2 + 1)); // left
+      this.px(x +  4 + sway, footY - 13 + swing, 6, 2, this.sk(i * 2 + 1)); // right
+    });
+  }
+
   drawAudience(applause=false) {
     const HC=['#0a0314','#14061e','#080a12','#04030c','#1c0a04','#120800'];
     const BC=['#040208','#07030c','#050506','#020204'];
@@ -507,6 +626,8 @@ class Rend {
       case 'violin':    this.drawViolinist(a); break;
       case 'trumpet':   this.drawTrumpeter(a); break;
       case 'reciter':   this.drawReciter(a); break;
+      case 'trio':      this.drawTrio(a); break;
+      case 'dancer':    this.drawDancer(state.n||1, a); break;
       case 'announcer': this.drawAnnouncer(); break;
     }
 
@@ -557,6 +678,78 @@ const ACTS = [
     banner:'TRUMPET SOLO',
     announce:"I gloi — Geraint Jones ar yr utgorn, meistr y Brenhinol Filwrol.",
   },
+  // ── LLENYDDIAETH ───────────────────────────────
+  {
+    type:'reciter', spotMode:'center', music:'folk',
+    name:'✦ Cadair yr Eisteddfod: "Yr Alwad" ✦',
+    banner:'CADAIR',
+    announce:"Gwobr Cadair yr Eisteddfod — cerdd ar y testun 'Yr Alwad'. Y gystadleuaeth fwyaf bwysig.",
+  },
+  // ── ADRODD ─────────────────────────────────────
+  {
+    type:'reciter', spotMode:'center', music:'recitation',
+    name:'✦ Prif-adroddiad: "Hon" ✦',
+    banner:'PRIF-ADRODDIAD',
+    announce:"Prif-adroddiad yr Eisteddfod — 'Hon' gan T. H. Parry-Williams. Eiliad dawel ar y llwyfan.",
+  },
+  {
+    type:'choir', n:5, spotMode:'choir', music:'recitation',
+    name:"♪ Cyd-adrodd: Noson Loergan Patagonia ♪",
+    banner:'CYD-ADRODD',
+    announce:"Cyd-adrodd agored — 'Noson Loergan Patagonia' gan Arel Hughes de Sarda.",
+  },
+  // ── CERDDORIAETH: POBL IFANC ───────────────────
+  {
+    type:'choir', n:7, spotMode:'choir', music:'folk',
+    name:"♪ Côr Plant: Y teimlad hapus ♪",
+    banner:'CÔR PLANT',
+    announce:"Côr Plant Ysgol Feithrin — 'Y teimlad hapus'. Lleisiau bach yr Eisteddfod.",
+  },
+  {
+    type:'choir', n:10, spotMode:'choir', music:'choir',
+    name:"♪ Parti hyd at 18: Y Pererin a'r Iesu ♪",
+    banner:'PARTI IFANC',
+    announce:"Parti cerdd hyd at ddeunaw oed — 'Y Pererin a'r Iesu'. Cenhedlaeth newydd yr Eisteddfod.",
+  },
+  // ── CERDDORIAETH: OEDOLION ─────────────────────
+  {
+    type:'solo', spotMode:'center', music:'folk',
+    name:"♫ Unawd i Ferched: O! Seren wen ♫",
+    banner:'UNAWD MERCHED',
+    announce:"Unawd i ferched — 'O! Seren wen'. Cân draddodiadol o galon y Wladfa.",
+  },
+  {
+    type:'solo', spotMode:'center', music:'hymn',
+    name:"♫ Unawd i Ddynion: Cwm Pennant ♫",
+    banner:'UNAWD DYNION',
+    announce:"Unawd i ddynion — 'Cwm Pennant'. Emyn mynyddoedd a hiraeth mawr.",
+  },
+  {
+    type:'trio', spotMode:'center', music:'folk',
+    name:"♪ Triawd i Ferched: Beth yw'r haf i mi ♪",
+    banner:'TRIAWD',
+    announce:"Triawd i ferched — 'Beth yw'r haf i mi'. Tair llais yn uno'n un gân.",
+  },
+  {
+    type:'choir', n:4, spotMode:'duo', music:'hymn',
+    name:"♪ Pedwarawd: Ar hyd y nos ♪",
+    banner:'PEDWARAWD',
+    announce:"Pedwarawd — 'Ar hyd y nos'. Cân nos enwocaf Cymru.",
+  },
+  // ── DAWNS WERIN ────────────────────────────────
+  {
+    type:'dancer', n:1, spotMode:'center', music:'dance',
+    name:"💃 Dawns 12–15 oed: Hoffedd ap Hywel 💃",
+    banner:'DAWNS WERIN',
+    announce:"Dawns werin i blant 12 i 15 oed — 'Hoffedd ap Hywel'. Y traddodiad dawns yn fyw!",
+  },
+  {
+    type:'dancer', n:2, spotMode:'duo', music:'dance',
+    name:"💃 Dawns Lefel Uwch: Sawdl y fuwch 💃",
+    banner:'DAWNS UWCH',
+    announce:"Dawns lefel uwch — 'Sawdl y fuwch'. Y dawnswyr gorau yn perfformio.",
+  },
+  // ── GRAND FINALE ───────────────────────────────
   {
     type:'choir', n:12, spotMode:'choir', music:'choir',
     name:'♪ ♪  FINALE — PAWB AR Y LLWYFAN  ♪ ♪',
