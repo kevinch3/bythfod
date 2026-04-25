@@ -1503,12 +1503,14 @@ class Show {
   skip()  {
     if (!this.started) { this.start(); return; }
     this.sy.silence();
+    this.state.actType=''; // clear stage immediately before fade-out begins
     this.phase='fade-out'; this.timer=0;
   }
   nextAct() {
     this.idx = (this.idx+1) % ACTS.length;
     this.phase='fade-in'; this.timer=0;
     this.state.overlay=1;
+    this.state.actType=''; // clear performer so nothing shows through the fade
     this.updateDots();
     this.name('♪ ♪  EISTEDDFOD  ♪ ♪');
     this.sub('...');
