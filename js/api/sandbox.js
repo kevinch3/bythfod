@@ -29,6 +29,7 @@ export async function prepareSandbox({ plan, config, username, password, log = (
   const api = client ?? new ApiClient({ baseUrl: config.API_BASE });
   const year = config.SIM_YEAR;
   const prefix = `${config.COMP_PREFIX}${year}`;
+  const SIM_PREFIX = 'SIM-'; // marks participants this sim created (document_id)
 
   await api.login(username, password);
   log('✔ login ok');
@@ -65,8 +66,17 @@ export async function prepareSandbox({ plan, config, username, password, log = (
     for (const w of await api.getWorks(comp.id)) await api.deleteWork(w.id);
     for (const r of await api.getRegistrations({ year, comp: comp.id })) await api.dropRegistration(r.id);
   }
-  for (const p of await api.getParticipants('SIM-')) await api.deleteParticipant(p.id);
-  log(`✔ sandbox reseteado (${sandboxComps.length} competencias previas)`);
+  // The API's ?q= is a LIKE '%…%' over name/surname/document_id, so it can match
+  // rows we never created. Delete only what is provably ours: our document_id marker.
+  const found = await api.getParticipants(SIM_PREFIX);
+  let dropped = 0;
+  for (const p of found) {
+    // id is an autoincrement rowid; our marker lives in document_id.
+    if (!String(p.document_id ?? '').startsWith(SIM_PREFIX)) continue;
+    await api.deleteParticipant(p.id);
+    dropped++;
+  }
+  log(`✔ sandbox reseteado (${sandboxComps.length} competencias previas, ${dropped}/${found.length} participantes)`);
 
   // 4. Publish the plan: upsert competitions, create participants + registrations
   const haveComp = new Set(sandboxComps.map(c => c.id));

@@ -171,3 +171,21 @@ test('redraw deletes the existing works then re-awards', async () => {
   assert.equal(dels, 2);
   assert.ok(tail.lastIndexOf('deleteWork') < tail.indexOf('createWork'), 'must delete before re-posting');
 });
+
+test('reset deletes only participants carrying our SIM- document_id', async () => {
+  // The API's ?q= is a LIKE '%…%' over name/surname/document_id, so a real
+  // person named "Simón" or holding doc "SIM-2020/7" comes back in the search.
+  // Only rows whose document_id starts with SIM- are ours to delete.
+  const client = fakeClient({
+    participants: [
+      { id: 1, name: 'A', document_id: 'SIM-1-1-1' },   // ours
+      { id: 2, name: 'B', document_id: 'SIM-1-2-1' },   // ours
+      { id: 3, name: 'Simón Vera', document_id: '30111222' }, // matched on name
+      { id: 4, name: 'C', document_id: 'DNI-SIM-9' },   // contains, not prefix
+      { id: 5, name: 'D', document_id: null },          // no document at all
+    ],
+  });
+  await prep(client);
+  const deleted = client.calls.filter(c => c[0] === 'deleteParticipant').map(c => c[1]);
+  assert.deepEqual(deleted, [1, 2], 'deleted a participant that was not ours');
+});
