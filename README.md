@@ -9,8 +9,9 @@ con devoluciones, premios — todo escrito en vivo en la base de
 
 Tres paneles:
 
-1. **Escenario** — el renderer NES de [bythfod](../bythfod) (vendorizado como
-   módulos ES, sin tocar el proyecto original).
+1. **Escenario** — el renderer NES de la demo previa de este repo (preservada
+   en el commit `4d8cbce`), ahora vendorizado como módulos ES en `js/render/`
+   (`stage` · `synth` · `music`).
 2. **Jury cam** — primer plano oscuro del beirniad en su mesa (mic, papeles,
    botella), activo durante la deliberación y el anuncio de premios.
 3. **Tablero de resultados** — pantalla de sala que lee la API: orden del día,
@@ -24,11 +25,11 @@ Tres paneles:
 cd ../web/revamps/eistedglobal-revamp/api && npm run seed && npm run dev
 
 # 2. La sim (puerto 8123)
-cd bythfod-via-eisteddglobal && npm run serve   # npx http-server -p 8123 -c-1
+cd bythfod && npm run serve                     # npx http-server -p 8123 -c-1
 
 # 3. Abrir http://localhost:8123
-#    → seed + credenciales (admin/admin1234) → CONNECT & PREPARE
-#    → o DECHRAU (offline) para correr sin API
+#    → seed + credenciales (admin/admin1234) → CONECTAR Y PREPARAR
+#    → o COMENZAR (sin conexión) para correr sin API
 ```
 
 El Angular admin (puerto 4200) puede correr en paralelo para **ver las tablas**
@@ -65,7 +66,7 @@ acumulan invisibles para la UI — aceptable para un año sandbox.
 ## Arquitectura
 
 ```
-js/core     rng · names · program-2023 (los 61 ítems del PDF) · roster (sorteo)
+js/core     rng · names · program (los 46 ítems ficticios) · roster (sorteo)
             timeline (ítem → segmentos) · engine (máquina de fases pura,
             emite efectos-datos) · feedback (frases del jurado, seam para LLM)
 js/api      client (fetch tipado, re-login en 401, cola serializada)
