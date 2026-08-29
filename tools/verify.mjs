@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Prints a summary of the sandbox edition straight from the API.
-// Usage: node tools/verify.mjs [--user admin] [--pass admin1234]
+// Usage: EISTED_USER=… EISTED_PASS=… node tools/verify.mjs
 import { CONFIG } from '../js/config.js';
 import { ApiClient } from '../js/api/client.js';
 
@@ -8,9 +8,16 @@ const arg = (name, dflt) => {
   const i = process.argv.indexOf(`--${name}`);
   return i > 0 ? process.argv[i + 1] : dflt;
 };
+// Credentials come from the environment (or --user/--pass); never hardcoded.
+const user = arg('user', process.env.EISTED_USER);
+const pass = arg('pass', process.env.EISTED_PASS);
+if (!user || !pass) {
+  console.error('Faltan credenciales. Exportá EISTED_USER y EISTED_PASS, o pasá --user/--pass.');
+  process.exit(2);
+}
 
 const client = new ApiClient({ baseUrl: CONFIG.API_BASE });
-await client.login(arg('user', 'admin'), arg('pass', 'admin1234'));
+await client.login(user, pass);
 
 const prefix = `${CONFIG.COMP_PREFIX}${CONFIG.SIM_YEAR}`;
 const all = (await client.getCompetitions(CONFIG.SIM_YEAR)).filter(c => c.id.startsWith(prefix));

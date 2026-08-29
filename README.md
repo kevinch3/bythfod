@@ -28,12 +28,12 @@ cd ../web/revamps/eistedglobal-revamp/api && npm run seed && npm run dev
 cd bythfod && npm run serve                     # npx http-server -p 8123 -c-1
 
 # 3. Abrir http://localhost:8123
-#    → seed + credenciales (admin/admin1234) → CONECTAR Y PREPARAR
+#    → seed + credenciales del seed de eistedglobal → CONECTAR Y PREPARAR
 #    → o COMENZAR (sin conexión) para correr sin API
 ```
 
 El Angular admin (puerto 4200) puede correr en paralelo para **ver las tablas**
-(login admin/admin1234 → Competitions/Registrations/Works filtrando año 2099):
+(login con las credenciales del seed → Competitions/Registrations/Works, año 2099):
 
 ```bash
 cd ../web/revamps/eistedglobal-revamp/app && npx ng serve
@@ -52,8 +52,8 @@ listado (click en un ítem = saltar a él) · SONIDO on/off · selector de tema.
 
 ```bash
 node --test                      # suite completa (node 22, sin dependencias)
-node tools/e2e.mjs --seed 42     # login→reset→publicar→premiar→verificar
-node tools/verify.mjs            # tabla del sandbox directo de la API
+EISTED_USER=… EISTED_PASS=… node tools/e2e.mjs --seed 42   # login→reset→premiar
+EISTED_USER=… EISTED_PASS=… node tools/verify.mjs          # tabla del sandbox
 ```
 
 Correr `e2e` dos veces prueba la idempotencia del reset: la edición 2099 se

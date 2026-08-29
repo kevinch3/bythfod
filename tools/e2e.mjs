@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 // Headless end-to-end: login → reset → publish plan → award a few items →
 // verify via the API. Usage: node tools/e2e.mjs [--seed 42] [--award 3]
-// Requires the eistedglobal API on localhost:3000 (seeded: npm run seed).
+// Requires the eistedglobal API on localhost:3000 (seeded: npm run seed)
+// and EISTED_USER / EISTED_PASS in the environment.
 import { CONFIG } from '../js/config.js';
 import { PROGRAM } from '../js/core/program.js';
 import { generateDayPlan } from '../js/core/roster.js';
@@ -11,6 +12,13 @@ const arg = (name, dflt) => {
   const i = process.argv.indexOf(`--${name}`);
   return i > 0 ? process.argv[i + 1] : dflt;
 };
+// Credentials come from the environment (or --user/--pass); never hardcoded.
+const user = arg('user', process.env.EISTED_USER);
+const pass = arg('pass', process.env.EISTED_PASS);
+if (!user || !pass) {
+  console.error('Faltan credenciales. Exportá EISTED_USER y EISTED_PASS, o pasá --user/--pass.');
+  process.exit(2);
+}
 const seed = parseInt(arg('seed', '42'), 10);
 const awardCount = parseInt(arg('award', '3'), 10);
 
@@ -20,7 +28,7 @@ console.log(`plan: seed ${seed}, ${items.length} items`);
 
 const sandbox = await prepareSandbox({
   plan, config: CONFIG,
-  username: arg('user', 'admin'), password: arg('pass', 'admin1234'),
+  username: user, password: pass,
   log: m => console.log(`  ${m}`),
 });
 

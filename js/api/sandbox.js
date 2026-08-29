@@ -25,7 +25,10 @@ const PSEUDONYMS = ['Awen', 'Morfa', 'Alarch', 'Seren y De', 'Gwlithyn', 'Hedydd
 
 const flat = plan => plan.sessions.flatMap(s => s.items);
 
-export async function prepareSandbox({ plan, config, username = 'admin', password = 'admin1234', log = () => {}, client }) {
+export async function prepareSandbox({ plan, config, username, password, log = () => {}, client }) {
+  if (!client && (!username || !password)) {
+    throw new Error('faltan credenciales del API (las crea `npm run seed` en eistedglobal)');
+  }
   const api = client ?? new ApiClient({ baseUrl: config.API_BASE });
   const year = config.SIM_YEAR;
   const prefix = `${config.COMP_PREFIX}${year}`;

@@ -23,11 +23,11 @@ const login = { status: 200, body: { token: 'tok-1', name: 'Admin', username: 'a
 test('login posts credentials and later requests carry the bearer token', async () => {
   const { calls, fetchImpl } = stubFetch([login, { status: 200, body: [] }]);
   const c = new ApiClient({ baseUrl: 'http://x/api', fetchImpl });
-  await c.login('admin', 'admin1234');
+  await c.login('admin', 'test-pw');
   await c.getCategories();
   assert.equal(calls[0].url, 'http://x/api/auth/login');
   assert.equal(calls[0].method, 'POST');
-  assert.deepEqual(calls[0].body, { username: 'admin', password: 'admin1234' });
+  assert.deepEqual(calls[0].body, { username: 'admin', password: 'test-pw' });
   assert.equal(calls[1].headers.Authorization, 'Bearer tok-1');
 });
 
@@ -59,7 +59,7 @@ test('a 401 mid-session triggers one silent re-login and retry', async () => {
     { status: 200, body: [{ id: 1 }] },
   ]);
   const c = new ApiClient({ baseUrl: 'http://x/api', fetchImpl });
-  await c.login('admin', 'admin1234');
+  await c.login('admin', 'test-pw');
   const out = await c.getCategories();
   assert.deepEqual(out, [{ id: 1 }]);
   assert.equal(calls.length, 4);
