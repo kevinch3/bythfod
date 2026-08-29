@@ -10,7 +10,9 @@ export class Hud {
     $('bSpeed').onclick = () => this.h.onSpeed();
     $('bProgram').onclick = () => this.toggleDrawer();
     $('bTheme').onchange = e => this.h.onTheme(e.target.value);
-    $('bConnect').onclick = () => this.h.onConnect(this.setupValues());
+    // The static build ships without the API panel, so these may not exist.
+    const connect = $('bConnect');
+    if (connect) connect.onclick = () => this.h.onConnect(this.setupValues());
     $('bStartOffline').onclick = () => this.h.onStart(this.setupValues());
 
     this._soundOn = true;
@@ -32,8 +34,9 @@ export class Hud {
   setupValues() {
     return {
       seed: parseInt(this.$('inSeed').value, 10) || 42,
-      username: this.$('inUser').value || 'admin',
-      password: this.$('inPass').value || 'admin1234',
+      // Credentials belong to the caller, not the HUD; absent in the static build.
+      username: this.$('inUser')?.value || undefined,
+      password: this.$('inPass')?.value || undefined,
     };
   }
 
@@ -41,6 +44,7 @@ export class Hud {
   hideSetup() { this.$('setup-overlay').hidden = true; }
   log(msg) {
     const el = this.$('setupLog');
+    if (!el) return; // static build ships no setup log
     el.textContent += `${msg}\n`;
     el.scrollTop = el.scrollHeight;
   }
