@@ -10,7 +10,7 @@ con devoluciones, premios — todo escrito en vivo en la base de
 Tres paneles:
 
 1. **Escenario** — el renderer NES de la demo previa de este repo (preservada
-   en el commit `4d8cbce`), ahora vendorizado como módulos ES en `js/render/`
+   en el commit `06c9095`), ahora vendorizado como módulos ES en `js/render/`
    (`stage` · `synth` · `music`).
 2. **Jury cam** — primer plano oscuro del beirniad en su mesa (mic, papeles,
    botella), activo durante la deliberación y el anuncio de premios.
