@@ -1,0 +1,223 @@
+/* Jury-cam scene — 384×336 dark close-up, NES-pixel look.
+   Modes set on the root: .mode-off .mode-listening .mode-speaking .mode-announcing */
+#pane-jury .pane-fit { width: 384px; height: 336px; }
+
+.jury {
+  position: relative;
+  width: 384px;
+  height: 336px;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse 300px 220px at 30% 26%, rgba(120, 80, 30, 0.20), transparent 70%),
+    #050308;
+  border: 3px solid #241031;
+  transition: filter .5s;
+}
+.jury.mode-off { filter: brightness(.35); }
+
+/* Pane goes "live" during adjudication (class set by main.js on the pane) */
+#pane-jury.live .jury {
+  border-color: #b02040;
+  box-shadow: 0 0 14px 2px rgba(220, 40, 80, .35);
+}
+#pane-jury.live .j-label { color: #ff7090; }
+#pane-jury.live .j-label::before { content: '● '; color: #ff2040; animation: rec-blink 1.1s steps(2) infinite; }
+@keyframes rec-blink { 50% { opacity: .2; } }
+
+.jury > div { position: absolute; }
+
+/* Dim spot cone from upper-left */
+.j-spot {
+  inset: 0;
+  background: linear-gradient(115deg, rgba(255, 220, 150, 0.10) 0%, transparent 45%);
+  transition: opacity .4s;
+  opacity: .7;
+}
+.mode-speaking .j-spot { opacity: 1; }
+.mode-announcing .j-spot {
+  opacity: 1;
+  background: linear-gradient(115deg, rgba(255, 220, 150, 0.22) 0%, transparent 55%);
+}
+
+.j-vignette {
+  inset: 0;
+  background: radial-gradient(ellipse 75% 70% at 46% 40%, transparent 45%, rgba(0, 0, 0, 0.72) 100%);
+}
+
+/* ── The adjudicator: big half-figure, head ~3× stage proportions ── */
+.j-fig { left: 108px; top: 48px; width: 168px; height: 220px; }
+.j-fig > div { position: absolute; }
+
+.j-hair {
+  left: 34px; top: -8px;
+  width: 100px; height: 46px;
+  background: var(--j-hair, #17090b);
+  border-radius: 8px 8px 0 0;
+}
+.j-head {
+  left: 40px; top: 8px;
+  width: 88px; height: 92px;
+  background: var(--j-skin, #d9a878);
+  box-shadow: inset -18px -10px 0 0 rgba(40, 16, 8, 0.35); /* face in half-shadow */
+}
+.j-head > div { position: absolute; }
+.j-glasses {
+  left: 8px; top: 30px;
+  width: 72px; height: 14px;
+  border-top: 3px solid #c8c8d8;
+  box-shadow: 0 -3px 0 0 rgba(200, 200, 216, 0.25);
+}
+.jury.no-glasses .j-glasses { display: none; }
+.j-eye { top: 34px; width: 8px; height: 7px; background: #14080a; }
+.j-eye.l { left: 16px; }
+.j-eye.r { left: 52px; }
+.j-mouth {
+  left: 32px; top: 66px;
+  width: 22px; height: 5px;
+  background: #6b3020;
+}
+.mode-speaking .j-mouth,
+.mode-announcing .j-mouth { animation: mouth-flap .34s steps(2) infinite; }
+@keyframes mouth-flap { 50% { height: 12px; } }
+
+.mode-listening .j-head,
+.mode-listening .j-hair { animation: head-tilt 6.5s ease-in-out infinite; }
+@keyframes head-tilt {
+  0%, 100% { transform: rotate(0deg); }
+  38% { transform: rotate(2deg); }
+  70% { transform: rotate(-1.5deg); }
+}
+
+.j-torso {
+  left: 6px; top: 96px;
+  width: 156px; height: 130px;
+  background: var(--j-coat, #241626);
+  border-radius: 14px 14px 0 0;
+  box-shadow: inset -30px 0 0 0 rgba(0, 0, 0, 0.4);
+}
+.j-arm {
+  left: -8px; top: 150px;
+  width: 46px; height: 70px;
+  background: #1d1220;
+  border-radius: 10px;
+  transform: rotate(24deg);
+}
+
+/* ── Table band + props ── */
+.j-table {
+  left: 0; right: 0; top: 252px; height: 84px;
+  background: #1f1208;
+  border-top: 6px solid #35200e;
+}
+.j-papers {
+  left: 56px; top: 240px;
+  width: 74px; height: 16px;
+  background: #e8e4d8;
+  box-shadow: 3px -5px 0 0 #d8d4c4, -4px -9px 0 0 #efece0;
+}
+.j-pencil {
+  left: 138px; top: 246px;
+  width: 30px; height: 5px;
+  background: #c8a838;
+  transform: rotate(-8deg);
+}
+.mode-listening .j-pencil { animation: scribble 5s steps(3) infinite; }
+@keyframes scribble {
+  0%, 78%, 100% { transform: rotate(-8deg) translateX(0); }
+  84% { transform: rotate(-14deg) translateX(5px); }
+  92% { transform: rotate(-4deg) translateX(-4px); }
+}
+.j-mic {
+  left: 196px; top: 196px;
+  width: 9px; height: 62px;
+  background: #6a6a72;
+}
+.j-mic::before {
+  content: '';
+  position: absolute;
+  left: -8px; top: -20px;
+  width: 25px; height: 22px;
+  background: #9a9aa4;
+  border-radius: 5px 5px 2px 2px;
+}
+.j-bottle {
+  left: 286px; top: 208px;
+  width: 20px; height: 48px;
+  background: rgba(140, 200, 230, 0.65);
+  border-radius: 4px 4px 0 0;
+}
+/* Every so often, the adjudicator takes a sip while listening */
+.mode-listening .j-bottle { animation: drink 17s ease-in-out infinite; }
+@keyframes drink {
+  0%, 72%, 100% { transform: none; }
+  78%, 86% { transform: translate(-96px, -98px) rotate(-42deg); }
+  93% { transform: translate(-28px, -26px) rotate(-12deg); }
+}
+.j-bottle::before {
+  content: '';
+  position: absolute;
+  left: 5px; top: -8px;
+  width: 10px; height: 8px;
+  background: #2a6a8a;
+}
+.j-envelope {
+  left: 250px; top: 232px;
+  width: 44px; height: 26px;
+  background: #e8ddb8;
+  border: 2px solid #b8a878;
+  display: none;
+}
+.mode-announcing .j-envelope { display: block; }
+
+/* ── Cyberpunk theme: neon visor + neon room ── */
+.jury[data-theme="cyberpunk"] {
+  background:
+    radial-gradient(ellipse 300px 220px at 30% 26%, rgba(0, 255, 204, 0.10), transparent 70%),
+    #020010;
+  border-color: #00ffcc;
+}
+.jury[data-theme="cyberpunk"]::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(0deg,
+    transparent 0px, transparent 5px,
+    rgba(0, 255, 200, 0.03) 5px, rgba(0, 255, 200, 0.03) 6px);
+  pointer-events: none;
+}
+/* Every adjudicator wears the neon visor in cyberpunk */
+.jury[data-theme="cyberpunk"] .j-glasses {
+  display: block !important;
+  height: 16px;
+  border-top: 4px solid #00ffcc;
+  box-shadow: 0 0 10px #00ffcc, 0 0 22px rgba(0, 255, 204, 0.5), 0 -3px 0 0 rgba(0, 255, 204, 0.3);
+}
+.jury[data-theme="cyberpunk"] .j-spot {
+  background: linear-gradient(115deg, rgba(0, 255, 204, 0.12) 0%, transparent 45%);
+}
+.jury[data-theme="cyberpunk"].mode-announcing .j-spot {
+  background: linear-gradient(115deg, rgba(0, 255, 204, 0.25) 0%, transparent 55%);
+}
+.jury[data-theme="cyberpunk"] .j-table { background: #060a24; border-top-color: #12205a; }
+.jury[data-theme="cyberpunk"] .j-caption { border-left-color: #00ffcc; color: #9fffe8; }
+.jury[data-theme="cyberpunk"] .j-label { color: #00ffcc; text-shadow: 0 0 8px rgba(0, 255, 204, .6); }
+
+/* ── Overlays ── */
+.j-label {
+  left: 8px; top: 6px;
+  font-family: 'Courier New', monospace;
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: #7a5a9a;
+}
+.j-caption {
+  left: 8px; right: 8px; bottom: 8px;
+  min-height: 34px;
+  padding: 5px 8px;
+  background: rgba(0, 0, 0, 0.78);
+  border-left: 4px solid #c89420;
+  color: #ffdd8a;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  line-height: 1.35;
+}

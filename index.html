@@ -3,49 +3,99 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Bythfod - Eisteddfod Sim</title>
-<link rel="stylesheet" href="style.css">
+<title>Bythfod via Eistedglobal — Eisteddfod Day Sim</title>
+<link rel="stylesheet" href="css/layout.css">
+<link rel="stylesheet" href="css/stage.css">
+<link rel="stylesheet" href="css/jury.css">
+<link rel="stylesheet" href="css/board.css">
 </head>
 <body>
-<div id="wrap">
-  <div id="stage" data-theme="nes">
-    <div class="layer" id="l-bg"></div>
-    <div class="layer" id="l-floor"></div>
-    <div class="layer" id="l-risers">
-      <div class="riser back"></div>
-      <div class="riser mid"></div>
-      <div class="riser front"></div>
-    </div>
-    <div class="layer" id="l-curtains">
-      <div class="curtain left"></div>
-      <div class="curtain right"></div>
-      <div class="valance"></div>
-    </div>
-    <div class="layer" id="l-performers"></div>
-    <div class="layer" id="l-spots"></div>
-    <div class="layer" id="l-audience"></div>
-    <div class="layer" id="l-overlay"></div>
-    <div class="layer" id="l-banner" hidden></div>
-    <div class="layer" id="l-sparkles"></div>
-  </div>
-  <div id="hud">
-    <div id="actName">♪ ♪  EISTEDDFOD  ♪ ♪</div>
-    <div id="subtitle">Croeso — Welsh Festival of Arts · Click or SPACE to begin</div>
-    <div id="row2">
-      <div id="dots"></div>
-      <div id="btns">
-        <button id="bPlay">▶ DECHRAU</button>
-        <button id="bSkip">⏭ NESAF</button>
-        <button id="bVol" data-v="1">🔊 MED</button>
-        <select id="bTheme">
-          <option value="nes">🎮 NES</option>
-          <option value="cyberpunk">⚡ Cyberpunk</option>
-        </select>
+<div id="viewport">
+  <div id="panes">
+    <section id="pane-stage" class="pane">
+      <div id="lower-third" hidden>
+        <div id="lt-tag">EN ESCENA · AR Y LLWYFAN</div>
+        <div id="lt-name"></div>
+        <div id="lt-info"></div>
       </div>
+      <div class="pane-fit">
+        <div id="stage" data-theme="nes">
+          <div class="layer" id="l-bg"></div>
+          <div class="layer" id="l-floor"></div>
+          <div class="layer" id="l-risers">
+            <div class="riser back"></div>
+            <div class="riser mid"></div>
+            <div class="riser front"></div>
+          </div>
+          <div class="layer" id="l-curtains">
+            <div class="curtain left"></div>
+            <div class="curtain right"></div>
+            <div class="valance"></div>
+          </div>
+          <div class="layer" id="l-performers"></div>
+          <div class="layer" id="l-spots"></div>
+          <div class="layer" id="l-audience"></div>
+          <div class="layer" id="l-overlay"></div>
+          <div class="layer" id="l-banner" hidden></div>
+          <div class="layer" id="l-sparkles"></div>
+        </div>
+      </div>
+    </section>
+    <div id="right-col">
+      <section id="pane-jury" class="pane">
+        <div class="pane-fit"><div id="jury" class="jury mode-off"></div></div>
+      </section>
+      <section id="pane-board" class="pane">
+        <div id="board">
+          <div id="b-header">EISTEDDFOD BYTHFOD · SIMULACIÓN</div>
+          <div id="b-now"><span class="b-tag">NAWR</span><span id="b-now-text">—</span></div>
+          <div id="b-next"><span class="b-tag">NESAF</span><span id="b-next-text">—</span></div>
+          <div id="b-body">
+            <div id="b-order"></div>
+            <div id="b-winners"><div class="b-sub">ENILLWYR · GANADORES</div><div id="b-winner-rows"></div></div>
+          </div>
+          <div id="b-status">sin conexión — modo offline</div>
+        </div>
+      </section>
     </div>
   </div>
 </div>
-<script src="rend-html.js"></script>
-<script src="app.js"></script>
+
+<div id="hud">
+  <div id="actName">♪ ♪ EISTEDDFOD BYTHFOD · SIMULACIÓN ♪ ♪</div>
+  <div id="subtitle">Croeso — configurá la función y pulsá Dechrau</div>
+  <div id="row2">
+    <button id="bPlay">▶ COMENZAR</button>
+    <button id="bSpeed">⏩ ×1</button>
+    <button id="bProgram">📋 PROGRAMA</button>
+    <button id="bVol">🔊 SONIDO</button>
+    <select id="bTheme">
+      <option value="nes">🎮 NES</option>
+      <option value="cyberpunk">⚡ Cyberpunk</option>
+    </select>
+  </div>
+</div>
+
+<div id="drawer" hidden>
+  <div id="drawer-title">RHAGLEN Y DYDD · PROGRAMA DEL DÍA</div>
+  <div id="progList"></div>
+</div>
+
+<div id="setup-overlay">
+  <div id="setup-box">
+    <h1>Bythfod <span>via eistedglobal</span></h1>
+    <p>Simulación de un Programa del Día ficticio — Eisteddfod Bythfod, Porth Awel</p>
+    <label>Seed <input id="inSeed" type="number" value="42"></label>
+    <label>Usuario API <input id="inUser" type="text" value="admin"></label>
+    <label>Contraseña <input id="inPass" type="password" value="admin1234"></label>
+    <div id="setup-btns">
+      <button id="bConnect">🔌 CONECTAR Y PREPARAR</button>
+      <button id="bStartOffline">▶ COMENZAR (sin conexión)</button>
+    </div>
+    <pre id="setupLog"></pre>
+  </div>
+</div>
+
+<script type="module" src="js/main.js"></script>
 </body>
 </html>

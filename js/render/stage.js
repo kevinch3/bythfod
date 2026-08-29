@@ -1,10 +1,10 @@
-'use strict';
-
+// Vendored from bythfod rend-html.js — DOM stage renderer (StageRend), renamed StageRend, ES module.
+// Coordinate space 256×224 × S=3. Contract: render({actType, phase, overlay, banner, spotMode, n, actT}).
 // ─────────────────────────────────────────────
 //  HTML/CSS RENDERER  — replaces canvas Rend
 //  Stage coordinate space: 256×224 (×3 → 768×672 CSS)
 // ─────────────────────────────────────────────
-class HtmlRend {
+export class StageRend {
   static S     = 3;
   static SKINS = ['#eec8a0','#deb07c','#bc7440','#8a5028','#663018','#eed4b8'];
   static ROBES = ['#1c3288','#142472','#223694','#182a82','#28389e'];
@@ -69,7 +69,7 @@ class HtmlRend {
   // ── SCENE ────────────────────────────────────────────────────────────
 
   _buildFootlights() {
-    const S = HtmlRend.S;
+    const S = StageRend.S;
     for (let i = 0; i < 8; i++) {
       const d = this._el('div', 'footlight');
       d.style.left = `${(14 + i * 32) * S}px`;
@@ -81,12 +81,12 @@ class HtmlRend {
   // ── AUDIENCE ─────────────────────────────────────────────────────────
 
   _buildAudience() {
-    const S = HtmlRend.S, au = this.L.audience;
+    const S = StageRend.S, au = this.L.audience;
     let s = 7919;
     const rn = () => { s = (s * 1664525 + 1013904223) & 0xffffffff; return (s >>> 0) / 4294967295; };
     const HC = ['#0a0314','#14061e','#080a12','#04030c','#1c0a04','#120800'];
     const BC = ['#040208','#07030c','#050506','#020204'];
-    const SK = HtmlRend.SKINS;
+    const SK = StageRend.SKINS;
 
     for (const {y, n, sp} of [{y:195,n:22,sp:11.6},{y:204,n:20,sp:12.8},{y:213,n:18,sp:14.2}]) {
       for (let i = 0; i < n; i++) {
@@ -132,11 +132,66 @@ class HtmlRend {
       case 'longways':  this._longways(anim);        break;
       case 'ceremoni':  this._ceremoni(anim);        break;
       case 'announcer': this._announcer();           break;
+      case 'empty':     /* bare dim stage while the jury speaks */ break;
     }
 
     if (['choir','solo','duo','violin','trumpet','trio'].includes(actType)) {
       this._pianist();
     }
+
+    // Entrance/exit transitions: performers walk in from the wings at the
+    // start of a performance and walk off during the applause. Longways and
+    // ceremoni keep their own choreography; the pianist stays seated.
+    if (['choir', 'solo', 'duo', 'violin', 'trumpet', 'reciter', 'trio', 'dancer'].includes(actType)) {
+      if (phase === 'performing') this._walkIn();
+      else if (phase === 'applause') this._walkOff();
+    }
+  }
+
+  _walkers() {
+    return [...this.L.performers.children].filter(el =>
+      el.classList.contains('person') && !el.classList.contains('facing-back'));
+  }
+
+  _walkIn() {
+    const S = StageRend.S;
+    this._walkers().forEach((el, i) => {
+      const targetX = parseInt(el.style.left, 10) / S;
+      const startDx = (targetX < 128 ? -(targetX + 24) : (256 - targetX) + 24) * S;
+      const T = 50, delay = i * 4;
+      let f0 = null;
+      this._anims.push(f => {
+        if (f0 === null) f0 = f;
+        const t = f - f0 - delay;
+        if (t < 0) { el.style.transform = `translateX(${startDx}px)`; return; }
+        const p = Math.min(1, t / T);
+        if (p >= 1) return; // arrived — the builder's bob anim takes over
+        const ease = 1 - Math.pow(1 - p, 2);
+        const dx = Math.round((startDx / S) * (1 - ease)) * S;
+        const step = Math.round(Math.sin(t * 0.6) * 0.8) * S;
+        el.style.transform = `translate(${dx}px, ${step}px)`;
+      });
+    });
+  }
+
+  _walkOff() {
+    const S = StageRend.S;
+    this._walkers().forEach((el, i) => {
+      const x = parseInt(el.style.left, 10) / S;
+      const endDx = (x < 128 ? -(x + 24) : (256 - x) + 24) * S;
+      const T = 55, delay = 12 + i * 3; // a short bow to the applause first
+      let f0 = null;
+      this._anims.push(f => {
+        if (f0 === null) f0 = f;
+        const t = f - f0 - delay;
+        if (t <= 0) return;
+        const p = Math.min(1, t / T);
+        const ease = p * p;
+        const dx = Math.round((endDx / S) * ease) * S;
+        const step = p < 1 ? Math.round(Math.sin(t * 0.6) * 0.8) * S : 0;
+        el.style.transform = `translate(${dx}px, ${step}px)`;
+      });
+    });
   }
 
   _choir(n, anim) {
@@ -156,7 +211,7 @@ class HtmlRend {
         if (anim) {
           const ii = idx;
           this._anims.push(f => {
-            el.style.transform = `translateY(${Math.round(Math.sin(f * .082 + ii * .95) * .6) * HtmlRend.S}px)`;
+            el.style.transform = `translateY(${Math.round(Math.sin(f * .082 + ii * .95) * .6) * StageRend.S}px)`;
           });
         }
       }
@@ -168,7 +223,7 @@ class HtmlRend {
     const p   = this._person(128, 132, 2, 0);
     this.L.performers.append(mic, p);
     if (anim) this._anims.push(f => {
-      const by = Math.round(Math.sin(f * .06) * .5) * HtmlRend.S;
+      const by = Math.round(Math.sin(f * .06) * .5) * StageRend.S;
       p.style.transform = mic.style.transform = `translateY(${by}px)`;
     });
   }
@@ -178,8 +233,8 @@ class HtmlRend {
     const m2 = this._prop('mic', 157, 132), p2 = this._person(158, 132, 4, 2);
     this.L.performers.append(m1, p1, m2, p2);
     if (anim) this._anims.push(f => {
-      const b1 = Math.round(Math.sin(f * .06) * .5)      * HtmlRend.S;
-      const b2 = Math.round(Math.sin(f * .065 + 1.1) * .5) * HtmlRend.S;
+      const b1 = Math.round(Math.sin(f * .06) * .5)      * StageRend.S;
+      const b2 = Math.round(Math.sin(f * .065 + 1.1) * .5) * StageRend.S;
       p1.style.transform = m1.style.transform = `translateY(${b1}px)`;
       p2.style.transform = m2.style.transform = `translateY(${b2}px)`;
     });
@@ -190,7 +245,7 @@ class HtmlRend {
     const vn = this._prop('violin', 128, 132);
     this.L.performers.append(p, vn);
     if (anim) this._anims.push(f => {
-      const by = Math.round(Math.sin(f * .07) * .5) * HtmlRend.S;
+      const by = Math.round(Math.sin(f * .07) * .5) * StageRend.S;
       p.style.transform = vn.style.transform = `translateY(${by}px)`;
     });
   }
@@ -200,7 +255,7 @@ class HtmlRend {
     const tr = this._prop('trumpet', 120, 132);
     this.L.performers.append(p, tr);
     if (anim) this._anims.push(f => {
-      const by = Math.round(Math.sin(f * .07) * .4) * HtmlRend.S;
+      const by = Math.round(Math.sin(f * .07) * .4) * StageRend.S;
       p.style.transform = tr.style.transform = `translateY(${by}px)`;
     });
   }
@@ -210,7 +265,7 @@ class HtmlRend {
     const p   = this._person(128, 132, 0, 4);
     this.L.performers.append(pod, p);
     if (anim) this._anims.push(f => {
-      p.style.transform = `translateY(${Math.round(Math.sin(f * .04) * .3) * HtmlRend.S}px)`;
+      p.style.transform = `translateY(${Math.round(Math.sin(f * .04) * .3) * StageRend.S}px)`;
     });
   }
 
@@ -220,7 +275,7 @@ class HtmlRend {
       const p   = this._person(x, 132, i * 2 + 1, i);
       this.L.performers.append(mic, p);
       if (anim) this._anims.push(f => {
-        const by = Math.round(Math.sin(f * .065 + i * 1.1) * .5) * HtmlRend.S;
+        const by = Math.round(Math.sin(f * .065 + i * 1.1) * .5) * StageRend.S;
         p.style.transform = mic.style.transform = `translateY(${by}px)`;
       });
     });
@@ -232,8 +287,8 @@ class HtmlRend {
     const pod = this._prop('atril', 38, 160);
     this.L.performers.append(p1, p2, pod);
     this._anims.push(f => {
-      p1.style.transform = `translateY(${Math.round(Math.sin(f * .05) * .5)      * HtmlRend.S}px)`;
-      p2.style.transform = `translateY(${Math.round(Math.sin(f * .055 + 0.8) * .5) * HtmlRend.S}px)`;
+      p1.style.transform = `translateY(${Math.round(Math.sin(f * .05) * .5)      * StageRend.S}px)`;
+      p2.style.transform = `translateY(${Math.round(Math.sin(f * .055 + 0.8) * .5) * StageRend.S}px)`;
     });
   }
 
@@ -253,7 +308,7 @@ class HtmlRend {
   }
 
   _longways(anim) {
-    const S = HtmlRend.S;
+    const S = StageRend.S;
     const xs = [52, 86, 118, 150, 184], P = 420;
     const ease = p => p < .5 ? 2*p*p : 1 - Math.pow(-2*p+2, 2)/2;
     const seg  = (s, e, t) => ease(Math.max(0, Math.min(1, (t - s) / (e - s))));
@@ -284,7 +339,7 @@ class HtmlRend {
   }
 
   _ceremoni(anim) {
-    const S = HtmlRend.S;
+    const S = StageRend.S;
     const throne     = this._prop('throne', 128, 148);
     const trumpeter  = this._person(80, 132, 4, 3);
     const tr         = this._prop('trumpet', 72, 132);
@@ -315,9 +370,9 @@ class HtmlRend {
   // ── DOM BUILDERS ──────────────────────────────────────────────────────
 
   _person(x, footY, skinIdx, robeIdx) {
-    const S    = HtmlRend.S;
-    const skin = HtmlRend.SKINS[skinIdx % 6];
-    const robe = HtmlRend.ROBES[robeIdx % 5];
+    const S    = StageRend.S;
+    const skin = StageRend.SKINS[skinIdx % 6];
+    const robe = StageRend.ROBES[robeIdx % 5];
     const el   = this._el('div', 'person',
       `left:${x*S}px;top:${footY*S}px;--skin:${skin};--robe:${robe}`);
     el.innerHTML =
@@ -335,12 +390,12 @@ class HtmlRend {
   }
 
   _folkFig(x, footY, idx, anim) {
-    const S      = HtmlRend.S;
+    const S      = StageRend.S;
     const female = !(idx & 1);
     const slot   = Math.floor(idx / 2) % 6;
     const sc     = ['#b82858','#174882','#1a5c20','#7a1818','#b86418','#1a4860'][slot];
     const el     = this._el('div', `person folk ${female ? 'female' : 'male'}`,
-      `left:${x*S}px;top:${footY*S}px;--skin:${HtmlRend.SKINS[idx%6]};--folk-sc:${sc}`);
+      `left:${x*S}px;top:${footY*S}px;--skin:${StageRend.SKINS[idx%6]};--folk-sc:${sc}`);
     el.innerHTML =
       `<div class="p-shadow"></div>` +
       `<div class="p-coat folk-body"></div>` +
@@ -358,7 +413,7 @@ class HtmlRend {
   }
 
   _prop(type, x, footY) {
-    const S  = HtmlRend.S;
+    const S  = StageRend.S;
     const el = this._el('div', `prop prop-${type}`,
       `left:${x*S}px;top:${footY*S}px`);
     return el;
@@ -372,8 +427,8 @@ class HtmlRend {
     const cols = ['#ffdd44','#ff88cc','#88ffcc','#aaddff','#ffaa44'];
     for (let i = 0; i < 16; i++) {
       l.appendChild(this._el('div', 'sparkle',
-        `left:${Math.floor(Math.random()*234+8)*HtmlRend.S}px;` +
-        `top:${Math.floor(Math.random()*180+8)*HtmlRend.S}px;` +
+        `left:${Math.floor(Math.random()*234+8)*StageRend.S}px;` +
+        `top:${Math.floor(Math.random()*180+8)*StageRend.S}px;` +
         `background:${cols[i%5]};animation-delay:${(Math.random()*.8).toFixed(2)}s`));
     }
   }

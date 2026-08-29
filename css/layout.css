@@ -1,0 +1,215 @@
+/* App shell: reset, three-pane layout, HUD, drawer, setup overlay. */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+/* The hidden attribute must win over any author display value (flex etc.) —
+   the UA's own [hidden]{display:none} loses to author rules by cascade origin. */
+[hidden] { display: none !important; }
+
+body {
+  background: #04000c;
+  color: #ddc8ff;
+  font-family: 'Courier New', monospace;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+/* Whole three-pane block scales as one unit; vendored pixel math untouched. */
+#viewport {
+  width: 1164px;
+  height: 672px;
+  transform: scale(var(--app-scale, 1));
+  transform-origin: top center;
+}
+
+#panes { display: flex; gap: 12px; }
+.pane { position: relative; }
+.pane-fit { position: relative; }
+#pane-stage .pane-fit { width: 768px; height: 672px; }
+
+#right-col {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 384px;
+}
+
+/* HUD */
+#hud {
+  width: min(96vw, 1164px);
+  background: #080014;
+  border: 3px solid #3a0066;
+  padding: 8px 18px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+#actName {
+  font-size: 15px;
+  color: #ffdd44;
+  text-align: center;
+  letter-spacing: 2px;
+  text-shadow: 0 0 10px #cc8800;
+  min-height: 20px;
+}
+
+#subtitle {
+  font-size: 11px;
+  color: #aa77ee;
+  text-align: center;
+  font-style: italic;
+  min-height: 15px;
+}
+
+#row2 {
+  display: flex;
+  justify-content: center;
+  gap: 7px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+button, select {
+  background: #150022;
+  color: #bb88ff;
+  border: 2px solid #4422aa;
+  padding: 4px 13px;
+  font-family: inherit;
+  font-size: 11px;
+  cursor: pointer;
+  letter-spacing: 1px;
+}
+button:hover, select:hover { background: #2a0044; color: #fff; }
+select option { background: #150022; color: #bb88ff; }
+
+/* Lower third — broadcast caption over the stage naming the current performer */
+#lower-third {
+  position: absolute;
+  left: 16px;
+  bottom: 104px; /* above the audience rows */
+  z-index: 5;
+  max-width: 62%;
+  background: rgba(4, 0, 12, 0.82);
+  border-left: 5px solid #c89420;
+  padding: 7px 14px 8px;
+  pointer-events: none;
+  animation: lt-in .45s ease-out;
+}
+@keyframes lt-in {
+  from { transform: translateX(-14px); opacity: 0; }
+  to   { transform: none; opacity: 1; }
+}
+#lt-tag {
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: #ff7090;
+}
+#lt-name {
+  font-size: 17px;
+  font-weight: bold;
+  color: #ffdd8a;
+  letter-spacing: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#lt-info {
+  font-size: 11px;
+  color: #b49ae0;
+  font-style: italic;
+}
+
+/* Program drawer */
+#drawer {
+  position: fixed;
+  right: 0; top: 0; bottom: 0;
+  width: 340px;
+  background: rgba(8, 0, 20, 0.96);
+  border-left: 3px solid #3a0066;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+}
+#drawer-title {
+  padding: 10px;
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: #ffdd44;
+  border-bottom: 2px solid #3a0066;
+}
+#progList { overflow-y: auto; flex: 1; padding-bottom: 20px; }
+.prog-session {
+  padding: 8px 10px 4px;
+  font-size: 10px;
+  color: #8866cc;
+  letter-spacing: 1px;
+  border-bottom: 1px solid #221040;
+}
+.prog-item {
+  padding: 4px 10px;
+  font-size: 10px;
+  cursor: pointer;
+  display: flex;
+  gap: 6px;
+  align-items: baseline;
+}
+.prog-item:hover { background: #1c0836; }
+.prog-item.now { background: #33116a; color: #ffdd44; }
+.prog-state { width: 14px; display: inline-block; }
+.prog-tag { color: #7a5aba; min-width: 34px; display: inline-block; }
+.prog-item.now .prog-tag { color: #ffcc66; }
+
+/* Setup overlay */
+#setup-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(2, 0, 8, 0.92);
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#setup-box {
+  width: 440px;
+  background: #0c0118;
+  border: 3px solid #4422aa;
+  padding: 22px 26px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+#setup-box h1 { font-size: 22px; color: #ffdd44; letter-spacing: 2px; }
+#setup-box h1 span { font-size: 12px; color: #8866cc; }
+#setup-box p { font-size: 11px; color: #aa77ee; }
+#setup-box label {
+  font-size: 11px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+#setup-box input {
+  background: #150022;
+  border: 2px solid #4422aa;
+  color: #ddc8ff;
+  font-family: inherit;
+  padding: 4px 8px;
+  width: 220px;
+}
+#setup-btns { display: flex; gap: 8px; margin-top: 4px; }
+#setupLog {
+  min-height: 90px;
+  max-height: 160px;
+  overflow-y: auto;
+  background: #05000e;
+  border: 1px solid #2a1152;
+  padding: 6px 8px;
+  font-size: 10px;
+  color: #77dd99;
+  white-space: pre-wrap;
+}
