@@ -877,11 +877,17 @@ class Rend {
       this.px(ox+5, fy-12, 2, 2, skin);
     }
   }
-  violin(x, y) {
-    this.px(x+5,y-16,4,10,'#6e2808');
-    this.px(x+5,y-12,4,6,'#8e3e16');
-    this.px(x+6,y-15,2,1,'#c8804a');
-    this.px(x+9,y-18,1,12,'#b89040');
+  violin(x, footY) {
+    // body: left of person, below chin at shoulder height (y > chin y=footY-14)
+    this.px(x-12, footY-14, 4, 7, '#7a3010');
+    this.px(x-11, footY-13, 2, 1, '#c8804a'); // upper f-hole
+    this.px(x-11, footY-10, 2, 1, '#c8804a'); // lower f-hole
+    // neck going up-left from body top
+    this.px(x-15, footY-19, 2, 6, '#5a2008');
+    this.px(x-16, footY-20, 3, 2, '#3e1c08'); // scroll
+    // bow at arm level (well below head)
+    this.px(x+2,  footY-7,  9, 1, '#c8a838');
+    this.px(x+2,  footY-8,  1, 2, '#8a7020'); // frog
   }
   trumpet(x, y) {
     this.px(x+3,y-8,13,3,'#ccaa00');
@@ -939,7 +945,8 @@ class Rend {
 
   drawViolinist(anim=false) {
     const by=anim?Math.round(Math.sin(this.f*.07)*.5):0;
-    this.violin(120,132+by); this.person(128,132+by,this.sk(1),'#1e3880');
+    this.person(128,132+by,this.sk(1),'#1e3880');
+    this.violin(128,132+by);
   }
 
   drawTrumpeter(anim=false) {
@@ -1308,7 +1315,8 @@ class Rend {
     if (state.actType !== 'ceremoni') this.drawRisers();
     this.drawCurtains();
     this.drawSpots(state.spotMode||'center');
-    this.piano(); this.drawPianist();
+    const musicalAct = ['choir','solo','duo','violin','trumpet','trio'].includes(state.actType);
+    if (musicalAct) this.drawPianist();
 
     const a = state.phase==='performing';
     switch(state.actType) {
@@ -1569,10 +1577,10 @@ class Show {
 // ─────────────────────────────────────────────
 //  MAIN
 // ─────────────────────────────────────────────
-const cv    = document.getElementById('c');
-const synth = new Synth();
-const rend  = new Rend(cv);
-const show  = new Show(synth, rend);
+const stageEl = document.getElementById('stage');
+const synth   = new Synth();
+const rend    = new HtmlRend(stageEl);
+const show    = new Show(synth, rend);
 
 rend.render(show.state);
 
@@ -1588,7 +1596,8 @@ requestAnimationFrame(loop);
 
 document.getElementById('bPlay').onclick = () => show.start();
 document.getElementById('bSkip').onclick = () => show.skip();
-cv.onclick = () => { if (!show.started) show.start(); else show.skip(); };
+stageEl.onclick = () => { if (!show.started) show.start(); else show.skip(); };
+document.getElementById('bTheme').onchange = e => rend.setTheme(e.target.value);
 
 const VOLS = [
   {v:.22, label:'🔊 MED'},

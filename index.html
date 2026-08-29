@@ -8,7 +8,26 @@
 </head>
 <body>
 <div id="wrap">
-  <canvas id="c" width="256" height="224"></canvas>
+  <div id="stage" data-theme="nes">
+    <div class="layer" id="l-bg"></div>
+    <div class="layer" id="l-floor"></div>
+    <div class="layer" id="l-risers">
+      <div class="riser back"></div>
+      <div class="riser mid"></div>
+      <div class="riser front"></div>
+    </div>
+    <div class="layer" id="l-curtains">
+      <div class="curtain left"></div>
+      <div class="curtain right"></div>
+      <div class="valance"></div>
+    </div>
+    <div class="layer" id="l-performers"></div>
+    <div class="layer" id="l-spots"></div>
+    <div class="layer" id="l-audience"></div>
+    <div class="layer" id="l-overlay"></div>
+    <div class="layer" id="l-banner" hidden></div>
+    <div class="layer" id="l-sparkles"></div>
+  </div>
   <div id="hud">
     <div id="actName">♪ ♪  EISTEDDFOD  ♪ ♪</div>
     <div id="subtitle">Croeso — Welsh Festival of Arts · Click or SPACE to begin</div>
@@ -18,10 +37,15 @@
         <button id="bPlay">▶ DECHRAU</button>
         <button id="bSkip">⏭ NESAF</button>
         <button id="bVol" data-v="1">🔊 MED</button>
+        <select id="bTheme">
+          <option value="nes">🎮 NES</option>
+          <option value="cyberpunk">⚡ Cyberpunk</option>
+        </select>
       </div>
     </div>
   </div>
 </div>
+<script src="rend-html.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
