@@ -109,7 +109,7 @@ const hud = new Hud({
       sandbox = await mod.prepareSandbox({
         ...values, plan: setupPlan(values.seed), config: CONFIG, log: m => hud.log(m),
       });
-      hud.log('✔ sandbox listo — pulsá DECHRAU (offline queda atrás)');
+      hud.log('✔ sandbox listo — pulsá COMENZAR (offline queda atrás)');
       document.getElementById('b-status').textContent = `conectado · edición ${CONFIG.SIM_YEAR}`;
       const { startPolling } = await import('./api/poller.js');
       startPolling({ sandbox, config: CONFIG, plan, board, getPosition: () => E.positionState(engine) });
