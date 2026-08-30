@@ -1,0 +1,39 @@
+{
+  // The TYPE-CHECKING config: covers src, test and tools, emits nothing.
+  // Browser emit is tsconfig.build.json, which compiles src/ alone — the two
+  // are split because a single rootDir cannot cover all three directories.
+  // Tests run straight off the sources under Node's type stripper, so
+  // `npm test` never invokes tsc at all.
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+
+    "noEmit": true,
+
+    "strict": true,
+    "noUncheckedIndexedAccess": false,
+    "noImplicitOverride": true,
+    "forceConsistentCasingInFileNames": true,
+
+    // Node's stripper erases types, it does not transform code. This makes tsc
+    // reject anything the stripper cannot run (enum, namespace, parameter
+    // properties), so tests and the browser build can never diverge.
+    "erasableSyntaxOnly": true,
+    "verbatimModuleSyntax": true,
+    "isolatedModules": true,
+
+    // Source imports carry the real .ts extension; emit rewrites them to .js.
+    "allowImportingTsExtensions": true,
+    "rewriteRelativeImportExtensions": true,
+
+    // Temporary, for the incremental migration: .js and .ts coexist in src/
+    // until the last file is converted, and untyped .js is not checked.
+    "allowJs": true,
+    "checkJs": false,
+
+    "skipLibCheck": true
+  },
+  "include": ["src/**/*", "test/**/*", "tools/**/*"]
+}

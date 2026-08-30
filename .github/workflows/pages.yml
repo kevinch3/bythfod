@@ -29,6 +29,8 @@ jobs:
       # `npm test`, not bare `node --test`: the latter treats every file under
       # test/ as a test file and would sweep up the contract scenario modules,
       # which are run by tools/contract-live.mjs against a real server instead.
+      - name: Type check
+        run: npm run typecheck
       - name: Test
         run: npm test
       - name: Verify the vendored contract is in sync with its source
