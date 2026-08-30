@@ -50,9 +50,18 @@ export class ApiClient {
     }
   }
 
-  /** Serialize a write; one retry on failure. Errors surface to the caller. */
+  /**
+   * Serialize a write so a mid-show hiccup cannot reorder awards.
+   *
+   * Deliberately does NOT retry. It used to be `fn().catch(() => fn())`, which
+   * retried ANY failure — including one where the write had already landed.
+   * POST /works has no uniqueness constraint (contract scenario 11a: two
+   * identical posts create two rows), so that blind retry could put a duplicate
+   * winner on the results board. Retrying belongs where we can tell what already
+   * exists; see award() in sandbox.js.
+   */
   enqueue(fn) {
-    const run = this._queue.then(() => fn().catch(() => fn()));
+    const run = this._queue.then(() => fn());
     this._queue = run.catch(() => {}); // keep the chain alive after failures
     return run;
   }

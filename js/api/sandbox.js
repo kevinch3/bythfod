@@ -135,9 +135,14 @@ export async function prepareSandbox({ plan, config, username, password, log = (
   }
   if (stale.length) log(`✔ ${stale.length} competencias residuales neutralizadas (vacante, rank 9xx)`);
 
-  async function award(item) {
-    if (item.placements === 'desierto') return [];
-    return Promise.all(item.placements.map(pl => {
+  /** Post only the placements the API does not already have for this item. */
+  async function awardMissing(item) {
+    const existing = await api.getWorks(item.compId);
+    const already = new Set(existing.map(w => `${w.participant_id}:${w.placement}`));
+    const todo = item.placements.filter(
+      pl => !already.has(`${participantIds.get(pl.entrantKey)}:${pl.placement}`),
+    );
+    return Promise.all(todo.map(pl => {
       const entrant = item.entrants.find(e => e.key === pl.entrantKey);
       return api.enqueue(() => api.createWork({
         participant_id: participantIds.get(pl.entrantKey),
@@ -147,6 +152,25 @@ export async function prepareSandbox({ plan, config, username, password, log = (
         placement: pl.placement,
       }));
     }));
+  }
+
+  /**
+   * Record this item's placements, exactly once each.
+   *
+   * The API has no uniqueness constraint on works, so a blind retry can create a
+   * duplicate winner. Instead each attempt re-reads what is already recorded and
+   * writes only the gap — which makes a retry safe, and also makes re-awarding
+   * the same item a no-op.
+   */
+  async function award(item) {
+    if (item.placements === 'desierto') return [];
+    try {
+      return await awardMissing(item);
+    } catch (err) {
+      // The failed POST may well have landed; re-deriving the gap is what keeps
+      // this retry from duplicating it.
+      return awardMissing(item);
+    }
   }
 
   async function redraw(item) {

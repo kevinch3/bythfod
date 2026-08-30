@@ -90,15 +90,26 @@ test('createWork posts the full body as JSON', async () => {
   assert.equal(calls[1].headers['Content-Type'], 'application/json');
 });
 
-test('enqueue serializes writes and retries a failure once', async () => {
+test('enqueue serializes writes and does NOT retry — a retry could duplicate a work', async () => {
   const order = [];
   const c = new ApiClient({ baseUrl: 'http://x', fetchImpl: async () => ({ ok: true, status: 200, json: async () => ({}) }) });
-  let firstTry = true;
+  let attempts = 0;
   const slow = () => new Promise(res => setTimeout(() => { order.push('slow'); res(); }, 30));
-  const flaky = async () => {
-    if (firstTry) { firstTry = false; throw new Error('transient'); }
-    order.push('flaky-ok');
-  };
-  await Promise.all([c.enqueue(slow), c.enqueue(flaky)]);
-  assert.deepEqual(order, ['slow', 'flaky-ok']);
+  const failing = async () => { attempts++; throw new Error('transient'); };
+
+  const results = await Promise.allSettled([c.enqueue(slow), c.enqueue(failing)]);
+  assert.deepEqual(order, ['slow'], 'writes ran out of order');
+  assert.equal(attempts, 1, 'the write was retried — POST /works is not idempotent');
+  assert.equal(results[1].status, 'rejected', 'the failure was swallowed instead of surfacing');
+});
+
+test('a failed write does not stall the queue for later writes', async () => {
+  const order = [];
+  const c = new ApiClient({ baseUrl: 'http://x', fetchImpl: async () => ({ ok: true, status: 200, json: async () => ({}) }) });
+  const boom = async () => { throw new Error('transient'); };
+  const after = async () => { order.push('after'); };
+  const failed = c.enqueue(boom);
+  const later = c.enqueue(after);
+  await Promise.allSettled([failed, later]);
+  assert.deepEqual(order, ['after'], 'the queue stalled after a failure');
 });

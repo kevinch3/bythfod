@@ -189,3 +189,46 @@ test('reset deletes only participants carrying our SIM- document_id', async () =
   const deleted = client.calls.filter(c => c[0] === 'deleteParticipant').map(c => c[1]);
   assert.deepEqual(deleted, [1, 2], 'deleted a participant that was not ours');
 });
+
+test('award is idempotent — awarding twice does not duplicate winners', async () => {
+  // A stateful fake: works actually persist, so a second award can see them.
+  // The real API has no uniqueness constraint on works (contract scenario 11a),
+  // so nothing but this check prevents a duplicate winner on the board.
+  const stored = [];
+  const client = fakeClient();
+  client.getWorks = (comp) => Promise.resolve(stored.filter(w => w.competition_id === comp));
+  client.createWork = (d) => { const w = { id: stored.length + 1, ...d }; stored.push(w); return Promise.resolve(w); };
+
+  const sandbox = await prep(client);
+  const item = PLAN.sessions[0].items[0]; // two entrants, placements 1 and 2
+
+  await sandbox.award(item);
+  assert.equal(stored.length, 2, 'first award did not record both placements');
+
+  await sandbox.award(item);
+  assert.equal(stored.length, 2, 'the second award duplicated the winners');
+
+  const keys = stored.map(w => `${w.participant_id}:${w.placement}`);
+  assert.equal(new Set(keys).size, 2, 'a placement was recorded twice');
+});
+
+test('award retries after a failure without duplicating the write that landed', async () => {
+  // The dangerous case: the POST succeeds server-side but the response fails.
+  // Re-deriving the gap on retry is what makes this safe.
+  const stored = [];
+  const client = fakeClient();
+  client.getWorks = (comp) => Promise.resolve(stored.filter(w => w.competition_id === comp));
+  let failNext = true;
+  client.createWork = (d) => {
+    const w = { id: stored.length + 1, ...d };
+    stored.push(w);                      // the write LANDS...
+    if (failNext) { failNext = false; return Promise.reject(new Error('connection reset')); } // ...then the response fails
+    return Promise.resolve(w);
+  };
+
+  const sandbox = await prep(client);
+  const item = PLAN.sessions[0].items[0];
+  await sandbox.award(item);
+
+  assert.equal(stored.length, 2, `expected 2 works, got ${stored.length} — the retry duplicated a landed write`);
+});
