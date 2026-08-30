@@ -8,7 +8,7 @@ import { API_CONFIG } from '../src/api/config.ts';
 const CONFIG = { ...SIM_CONFIG, ...API_CONFIG };
 import { PROGRAM } from '../src/core/program.ts';
 import { generateDayPlan } from '../src/core/roster.ts';
-import { prepareSandbox } from '../src/api/sandbox.js';
+import { prepareSandbox } from '../src/api/sandbox.ts';
 
 const arg = (name, dflt) => {
   const i = process.argv.indexOf(`--${name}`);

@@ -1,4 +1,4 @@
-// The eleven behaviours js/api/sandbox.js and js/api/client.js take on faith,
+// The eleven behaviours js/api/sandbox.ts and js/api/client.ts take on faith,
 // plus two nobody wrote down, as executable assertions.
 //
 // Each scenario returns nothing and throws on failure. They run against a real
@@ -239,7 +239,7 @@ scenario('5', 'PATCH /drop works with NO body and a JSON content-type', async (c
   });
   ctx.track.registrations.push(reg.body.id);
 
-  // Exactly what js/api/client.js sends: no body, Content-Type: application/json.
+  // Exactly what js/api/client.ts sends: no body, Content-Type: application/json.
   const res = await ctx.api.patch(`/registrations/${reg.body.id}/drop`, undefined, {
     headers: { 'Content-Type': 'application/json' },
   });

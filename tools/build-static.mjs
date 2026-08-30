@@ -17,7 +17,7 @@ const dist = join(root, 'dist');
 await rm(dist, { recursive: true, force: true });
 await mkdir(dist, { recursive: true });
 
-// Copy compiled output, not sources: index.html loads out/main.js in dev and in
+// Copy compiled output, not sources: index.html loads out/main.ts in dev and in
 // dist alike, so nothing here rewrites script paths. The API layer is excluded
 // wholesale; tools/assert-public-build.mjs verifies the result rather than
 // trusting this filter.

@@ -4,7 +4,7 @@
 import { CONFIG as SIM_CONFIG } from '../src/config.ts';
 import { API_CONFIG } from '../src/api/config.ts';
 const CONFIG = { ...SIM_CONFIG, ...API_CONFIG };
-import { ApiClient } from '../src/api/client.js';
+import { ApiClient } from '../src/api/client.ts';
 
 const arg = (name, dflt) => {
   const i = process.argv.indexOf(`--${name}`);

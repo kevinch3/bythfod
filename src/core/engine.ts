@@ -187,7 +187,24 @@ export function jumpTo(st: EngineState, ordinal: number): Effect[] {
 
 // ── Derived render states ──────────────────────────────────────────────────
 
-export function stageState(st: EngineState) {
+/**
+ * What the stage renderer needs for the current frame. Declared explicitly
+ * because the award fields exist only on the award segment, and inference
+ * would otherwise produce a union the caller cannot read them from.
+ */
+export interface StageView {
+  actType: string;
+  phase: string;
+  overlay: number;
+  n: number;
+  spotMode: string;
+  actT: number;
+  banner?: string | null;
+  awardOrder?: Placement[];
+  awardLineIdx?: number;
+}
+
+export function stageState(st: EngineState): StageView {
   const s = seg(st);
   const base = { actType: '', phase: 'idle', overlay: st.overlay, banner: null, spotMode: 'center', n: 1, actT: 0 };
   if (!st.started || st.phase === 'done' || st.phase === 'idle') return { ...base, overlay: 1 };
