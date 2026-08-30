@@ -23,22 +23,16 @@ jobs:
         with:
           node-version: '22'
           cache: npm
-      # devDependencies only (ajv, js-yaml for the contract harness) — nothing
-      # here is shipped; assert-public-build.mjs enforces that.
+      # devDependencies only — nothing here is shipped, and build:pages runs
+      # assert-public-build.mjs to prove it.
       - run: npm ci
-      # `npm test`, not bare `node --test`: the latter treats every file under
-      # test/ as a test file and would sweep up the contract scenario modules,
-      # which are run by tools/contract-live.mjs against a real server instead.
-      - name: Type check
-        run: npm run typecheck
-      - name: Test
-        run: npm test
-      - name: Verify the vendored contract is in sync with its source
-        run: node tools/sync-contract.mjs --check
-      - name: Build the offline static site
-        run: node tools/build-static.mjs
-      - name: Assert the public build ships no API code or credentials
-        run: node tools/assert-public-build.mjs
+      # One step, and it is the same command a developer runs. This workflow
+      # used to re-list typecheck, test and build-static.mjs individually, which
+      # drifted from package.json twice: once when `npm test` was scoped to
+      # test/*.test.js, and again when build:pages started compiling to out/.
+      # ci.yml verifies on this same push; this workflow only publishes.
+      - name: Build
+        run: npm run build:pages
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
