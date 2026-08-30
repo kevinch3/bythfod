@@ -1,0 +1,945 @@
+openapi: 3.1.0
+
+info:
+  title: eistedglobal API
+  version: 1.0.0
+  license:
+    name: UNLICENSED
+  description: |
+    REST API for managing eisteddfod editions, competitions, participants,
+    registrations and results.
+
+    **This document is descriptive, not aspirational.** It records the API as it
+    behaves today, including known defects, so that conformance is testable from
+    day one and drift can be distinguished from unimplemented intent. Behaviour
+    scheduled to change is marked **QUIRK** with an identifier from the project
+    plan (B1, B3, B6 …). Do not "fix" the spec ahead of the implementation — change
+    the implementation and the spec together.
+
+    Consumers: the Angular admin app, and the `bythfod` simulator, which both
+    populates a live instance and ships a mock server implementing this contract.
+
+servers:
+  - url: http://localhost:3000/api
+    description: Local development
+  - url: https://api.kevinroberts.ar/api
+    description: Production
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: auth
+    description: Login and token inspection.
+  - name: categories
+    description: The competition category vocabulary (Spanish/Welsh name pairs).
+  - name: editions
+    description: Festival years, keyed by year, plus their file uploads.
+  - name: competitions
+    description: Individual contests within an edition. Caller-supplied string ids.
+  - name: participants
+    description: People and groups. Deleting is a soft delete (`active = 0`).
+  - name: registrations
+    description: A participant entered in a competition. Withdrawal is a soft drop.
+  - name: works
+    description: Performed pieces and their placements — the results of the festival.
+  - name: system
+    description: Operational endpoints.
+
+paths:
+  /health:
+    get:
+      operationId: getHealth
+      tags: [system]
+      summary: Liveness probe
+      security: []
+      responses:
+        '200':
+          description: Service is up
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status, timestamp]
+                properties:
+                  status: { type: string, const: ok }
+                  timestamp: { type: string, format: date-time }
+
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Exchange credentials for a bearer token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, password]
+              properties:
+                username: { type: string }
+                password: { type: string, format: password }
+      responses:
+        '200':
+          description: Token issued. Expiry follows JWT_EXPIRES_IN (default 8h).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LoginResponse' }
+        '400':
+          description: '`{ error: "username and password are required" }`'
+          content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+        '401':
+          description: '`{ error: "Invalid credentials" }` — English, unlike the middleware''s Spanish 401s.'
+          content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+
+  /auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Decoded JWT payload of the caller
+      description: Returns the token payload verbatim — not a user record.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/JwtPayload' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /categories:
+    get:
+      operationId: listCategories
+      tags: [categories]
+      summary: All categories, ordered by name
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/Category' } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    post:
+      operationId: createCategory
+      tags: [categories]
+      summary: Create a category
+      description: |
+        **QUIRK** — `name` has no UNIQUE constraint, so this never conflicts and
+        duplicates are created silently. Clients must dedupe by name themselves.
+        (`seed.ts` uses `INSERT OR IGNORE`, which is therefore a no-op.)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CategoryInput' }
+      responses:
+        '201':
+          description: Created
+          content: { application/json: { schema: { $ref: '#/components/schemas/Category' } } }
+        '400':
+          description: '`{ error: "name is required" }`'
+          content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /categories/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IntId'
+    put:
+      operationId: updateCategory
+      summary: Replace a category
+      tags: [categories]
+      description: |
+        **QUIRK (B2)** — no required-field validation. Omitting `name` violates
+        NOT NULL and surfaces as 500, not 400.
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/CategoryInput' } } }
+      responses:
+        '200':
+          description: Updated
+          content: { application/json: { schema: { $ref: '#/components/schemas/Category' } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '500': { $ref: '#/components/responses/ConstraintAs500' }
+    delete:
+      operationId: deleteCategory
+      summary: Delete a category
+      tags: [categories]
+      description: |
+        Hard delete. **QUIRK (B1)** — deleting a category referenced by a
+        competition violates a foreign key and returns **500** with the raw SQLite
+        message, not 409.
+      responses:
+        '204': { description: Deleted }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '500': { $ref: '#/components/responses/ConstraintAs500' }
+
+  /editions:
+    get:
+      operationId: listEditions
+      tags: [editions]
+      summary: All editions, newest year first
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/Edition' } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    post:
+      operationId: createEdition
+      summary: Create an edition
+      tags: [editions]
+      description: |
+        Only `year` is persisted; other fields require a subsequent PUT. `year` is
+        not validated as a calendar year — any integer is accepted.
+
+        This is the **only** endpoint that returns a clean 409 on duplication;
+        competitions return 500 for the analogous case (see `createCompetition`).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [year]
+              properties: { year: { type: integer } }
+      responses:
+        '201':
+          description: Created
+          content: { application/json: { schema: { $ref: '#/components/schemas/Edition' } } }
+        '400':
+          description: '`{ error: "year is required" }`'
+          content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '409':
+          description: '`{ error: "Edition already exists" }`'
+          content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+
+  /editions/{year}:
+    parameters:
+      - $ref: '#/components/parameters/Year'
+    get:
+      operationId: getEdition
+      summary: Get an edition by year
+      tags: [editions]
+      responses:
+        '200':
+          description: OK
+          content: { application/json: { schema: { $ref: '#/components/schemas/Edition' } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    put:
+      operationId: updateEdition
+      summary: Replace an edition
+      tags: [editions]
+      description: |
+        **QUIRK (C1)** — every omitted field is written as NULL. This is a full
+        replace, not a merge: sending only `committee` wipes `presenters`.
+        `year` itself cannot be changed. There is no DELETE for editions (B9).
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/EditionInput' } } }
+      responses:
+        '200':
+          description: Updated
+          content: { application/json: { schema: { $ref: '#/components/schemas/Edition' } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /editions/{year}/uploads:
+    parameters:
+      - $ref: '#/components/parameters/Year'
+    get:
+      operationId: listEditionUploads
+      summary: List an edition's uploads
+      tags: [editions]
+      description: Returns `[]` for an unknown year rather than 404.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/Upload' } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    post:
+      operationId: createEditionUpload
+      summary: Attach an upload to an edition
+      tags: [editions]
+      description: |
+        **QUIRK (B1)** — the edition is not checked to exist; a bad year violates a
+        foreign key and returns 500.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [filename]
+              properties:
+                filename: { type: string }
+                description: { type: [string, 'null'] }
+      responses:
+        '201':
+          description: Created
+          content: { application/json: { schema: { $ref: '#/components/schemas/Upload' } } }
+        '400':
+          description: '`{ error: "filename is required" }`'
+          content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '500': { $ref: '#/components/responses/ConstraintAs500' }
+
+  /competitions:
+    get:
+      operationId: listCompetitions
+      summary: List competitions
+      tags: [competitions]
+      description: |
+        Ordered `rank ASC, id ASC` — clients rely on this (bythfod's running order).
+        Inner-joins `category`, so a competition with a dangling `category_id`
+        would be omitted entirely.
+      parameters:
+        - { name: year, in: query, schema: { type: integer }, description: Exact match }
+        - { name: type, in: query, schema: { $ref: '#/components/schemas/EntrantType' } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/Competition' } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    post:
+      operationId: createCompetition
+      summary: Create a competition
+      tags: [competitions]
+      description: |
+        `id` is supplied by the caller — it is a TEXT primary key, not generated.
+
+        **QUIRK (B1)** — a duplicate `id` violates the primary key and returns
+        **500** with the raw SQLite message, where the analogous edition case
+        returns a clean 409. **QUIRK (B2)** — `language` and `type` are validated
+        only by SQL CHECK, so an invalid value is a 500, not a 400.
+
+        The response is the inserted row **without** the category JOIN, so
+        `category_name` is absent here but present on GET.
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/CompetitionInput' } } }
+      responses:
+        '201':
+          description: Created (no category JOIN)
+          content: { application/json: { schema: { $ref: '#/components/schemas/CompetitionRow' } } }
+        '400':
+          description: '`{ error: "id, category_id, year, and type are required" }`'
+          content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '500': { $ref: '#/components/responses/ConstraintAs500' }
+
+  /competitions/{id}:
+    parameters:
+      - $ref: '#/components/parameters/StringId'
+    get:
+      operationId: getCompetition
+      summary: Get a competition
+      tags: [competitions]
+      responses:
+        '200':
+          description: OK
+          content: { application/json: { schema: { $ref: '#/components/schemas/Competition' } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    put:
+      operationId: updateCompetition
+      summary: Replace a competition
+      tags: [competitions]
+      description: |
+        **QUIRK (C6)** — `year` and `id` are silently not updatable; they are
+        omitted from the SET clause. **QUIRK (C1)** — omitted fields become NULL.
+        Response has no category JOIN.
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/CompetitionUpdate' } } }
+      responses:
+        '200':
+          description: Updated (no category JOIN)
+          content: { application/json: { schema: { $ref: '#/components/schemas/CompetitionRow' } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '500': { $ref: '#/components/responses/ConstraintAs500' }
+    delete:
+      operationId: deleteCompetition
+      summary: Delete a competition
+      tags: [competitions]
+      description: |
+        Hard delete, no cascade. **QUIRK (B1)** — a competition with registrations
+        or works violates a foreign key and returns **500**. Note that dropping a
+        registration is a soft delete, so the row still exists and still blocks
+        deletion.
+      responses:
+        '204': { description: Deleted }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '500': { $ref: '#/components/responses/ConstraintAs500' }
+
+  /participants:
+    get:
+      operationId: listParticipants
+      summary: List or search participants
+      tags: [participants]
+      description: |
+        Ordered `surname ASC, name ASC`.
+
+        **QUIRK (B3)** — soft-deleted participants (`active = 0`) are **still
+        returned**; there is no `active` filter. Clients must filter themselves.
+      parameters:
+        - { name: type, in: query, schema: { $ref: '#/components/schemas/EntrantType' } }
+        - name: q
+          in: query
+          schema: { type: string }
+          description: |
+            Substring match — `LIKE '%q%'` across **name, surname AND document_id**.
+            Case-insensitive for ASCII. A search for `SIM-` therefore also matches
+            a person named "Simón"; callers must re-check the field they meant.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/Participant' } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    post:
+      operationId: createParticipant
+      summary: Create a participant
+      tags: [participants]
+      description: '`active` defaults to 1 when omitted. `type` is validated only by SQL CHECK (B2).'
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/ParticipantInput' } } }
+      responses:
+        '201':
+          description: Created
+          content: { application/json: { schema: { $ref: '#/components/schemas/Participant' } } }
+        '400':
+          description: '`{ error: "name and type are required" }`'
+          content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '500': { $ref: '#/components/responses/ConstraintAs500' }
+
+  /participants/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IntId'
+    get:
+      operationId: getParticipant
+      summary: Get a participant
+      tags: [participants]
+      description: '**QUIRK (B3)** — returns inactive participants too.'
+      responses:
+        '200':
+          description: OK
+          content: { application/json: { schema: { $ref: '#/components/schemas/Participant' } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    put:
+      operationId: updateParticipant
+      summary: Replace a participant
+      tags: [participants]
+      description: |
+        Omitting `active` preserves the current value (unlike POST, which defaults
+        it to 1). **QUIRK (C1)** — other omitted fields become NULL.
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/ParticipantInput' } } }
+      responses:
+        '200':
+          description: Updated
+          content: { application/json: { schema: { $ref: '#/components/schemas/Participant' } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '500': { $ref: '#/components/responses/ConstraintAs500' }
+    delete:
+      operationId: deleteParticipant
+      summary: Deactivate a participant
+      tags: [participants]
+      description: |
+        **Soft delete** — sets `active = 0`; the row remains and is still returned
+        by the list endpoints (B3). Repeating the call on an already-inactive
+        participant still reports a change and still returns 204, so callers
+        cannot tell "deleted" from "already deleted".
+      responses:
+        '204': { description: Marked inactive }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /registrations:
+    get:
+      operationId: listRegistrations
+      summary: List registrations
+      tags: [registrations]
+      description: |
+        Ordered `surname ASC, name ASC`. **Dropped registrations are always
+        excluded** — `dropped = 0` is hardcoded with no way to include them (B4).
+        Joins participant and competition, so the response carries read-only
+        fields absent from the single-item form (see `getRegistration`).
+      parameters:
+        - { name: year, in: query, schema: { type: integer } }
+        - { name: comp, in: query, schema: { type: string } }
+        - { name: participant, in: query, schema: { type: integer } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/RegistrationListItem' } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    post:
+      operationId: createRegistration
+      summary: Register a participant
+      tags: [registrations]
+      description: |
+        `registered_at` is server-generated and cannot be set. **QUIRK (B5)** — no
+        uniqueness check: the same participant can be registered twice for the
+        same competition.
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/RegistrationInput' } } }
+      responses:
+        '201':
+          description: Created
+          content: { application/json: { schema: { $ref: '#/components/schemas/Registration' } } }
+        '400':
+          description: '`{ error: "participant_id, competition_id, and year are required" }`'
+          content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '500': { $ref: '#/components/responses/ConstraintAs500' }
+
+  /registrations/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IntId'
+    get:
+      operationId: getRegistration
+      summary: Get a registration
+      tags: [registrations]
+      description: |
+        **QUIRK (A8)** — a narrower shape than the list endpoint: joins only
+        `name` and `surname`, omitting `type`, `comp_description` and `language`.
+        Also does **not** filter `dropped`, so a dropped registration is still
+        fetchable here while being invisible in the list.
+      responses:
+        '200':
+          description: OK
+          content: { application/json: { schema: { $ref: '#/components/schemas/RegistrationItem' } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    put:
+      operationId: updateRegistration
+      summary: Update a registration
+      tags: [registrations]
+      description: 'Only `competition_id` and `pseudonym` are updatable; `participant_id` and `year` are fixed at creation.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                competition_id: { type: string }
+                pseudonym: { type: [string, 'null'] }
+      responses:
+        '200':
+          description: Updated
+          content: { application/json: { schema: { $ref: '#/components/schemas/Registration' } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /registrations/{id}/drop:
+    parameters:
+      - $ref: '#/components/parameters/IntId'
+    patch:
+      operationId: dropRegistration
+      tags: [registrations]
+      summary: Withdraw a registration (soft delete)
+      description: |
+        Sets `dropped = 1`. Takes no request body.
+
+        **QUIRK (B6)** — returns `200` with `{ message }` where every sibling
+        mutation returns `204`. There is no hard DELETE for registrations (B9),
+        so this is the only removal path and the row persists forever.
+      responses:
+        '200':
+          description: '`{ message: "Registration dropped" }`'
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [message]
+                properties: { message: { type: string } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /works:
+    get:
+      operationId: listWorks
+      summary: List works
+      tags: [works]
+      description: |
+        Ordered `placement ASC, title ASC`. `placement` is TEXT, so this sorts
+        lexicographically and NULLs come first.
+      parameters:
+        - { name: comp, in: query, schema: { type: string } }
+        - { name: participant, in: query, schema: { type: integer } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/WorkListItem' } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    post:
+      operationId: createWork
+      summary: Record a work
+      tags: [works]
+      description: |
+        `date` is server-generated; a `date` in the body is ignored. `placement` is
+        validated only by SQL CHECK (B2). No uniqueness constraint — posting the
+        same body twice creates two rows, which matters for clients that retry.
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/WorkInput' } } }
+      responses:
+        '201':
+          description: Created
+          content: { application/json: { schema: { $ref: '#/components/schemas/Work' } } }
+        '400':
+          description: '`{ error: "participant_id, competition_id, and title are required" }`'
+          content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '500': { $ref: '#/components/responses/ConstraintAs500' }
+
+  /works/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IntId'
+    get:
+      operationId: getWork
+      summary: Get a work
+      tags: [works]
+      description: '**QUIRK (A8)** — joins only `name`/`surname`, omitting `type` which the list endpoint includes.'
+      responses:
+        '200':
+          description: OK
+          content: { application/json: { schema: { $ref: '#/components/schemas/WorkItem' } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    put:
+      operationId: updateWork
+      summary: Update a work
+      tags: [works]
+      description: '`participant_id`, `competition_id` and `date` are not updatable. **QUIRK (C1)** — omitted fields become NULL.'
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/WorkUpdate' } } }
+      responses:
+        '200':
+          description: Updated
+          content: { application/json: { schema: { $ref: '#/components/schemas/Work' } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '500': { $ref: '#/components/responses/ConstraintAs500' }
+    delete:
+      operationId: deleteWork
+      summary: Delete a work
+      tags: [works]
+      description: Hard delete — works are the one entity that genuinely disappears.
+      responses:
+        '204': { description: Deleted }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        `Authorization: Bearer <token>` from `POST /auth/login`.
+
+        Note: the Angular client also sends `X-API-Key`, but **the API never reads
+        it** — it is a dead header (A6).
+
+  parameters:
+    IntId:
+      { name: id, in: path, required: true, schema: { type: integer } }
+    StringId:
+      { name: id, in: path, required: true, schema: { type: string } }
+    Year:
+      name: year
+      in: path
+      required: true
+      schema: { type: integer }
+      description: Editions are keyed by year; there is no separate id.
+
+  responses:
+    Unauthorized:
+      description: |
+        `{ error: "Token requerido" }` when the header is missing or malformed,
+        `{ error: "Token inválido o expirado" }` when verification fails.
+        **QUIRK (A4)** — these are Spanish while most other errors are English.
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    NotFound:
+      description: '`{ error: "<Entity> not found" }`'
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    ConstraintAs500:
+      description: |
+        **QUIRK (B1/B8)** — a database constraint violation (foreign key, unique,
+        NOT NULL, CHECK) is not mapped to a status code. It reaches the generic
+        error handler and is returned as **500 with the raw SQLite message**,
+        e.g. `{ error: "FOREIGN KEY constraint failed" }`. Semantically these are
+        409 or 400; treat any 500 here as a constraint failure, not an outage.
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+
+  schemas:
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error: { type: string }
+
+    LoginResponse:
+      type: object
+      required: [token, name, username]
+      properties:
+        token: { type: string }
+        name: { type: [string, 'null'] }
+        username: { type: string }
+
+    JwtPayload:
+      type: object
+      required: [userId, username]
+      properties:
+        userId: { type: integer }
+        username: { type: string }
+
+    EntrantType:
+      type: string
+      enum: [IND, GRU]
+      description: IND = individual, GRU = group. Shared by participants and competitions.
+
+    Placement:
+      type: [string, 'null']
+      enum: ['1', '2', '3', mencion, null]
+      description: Null means no placement awarded (or not yet adjudicated).
+
+    Language:
+      type: [string, 'null']
+      enum: [Cymraeg, Castellano, English, Aleman, Polaco, Frances, Portugues, Italiano, Otro, null]
+      description: |
+        Enforced by SQL CHECK. Note the values carry no diacritics (`Aleman`,
+        not `Alemán`).
+
+    CategoryInput:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string }
+        name_welsh: { type: [string, 'null'] }
+    Category:
+      type: object
+      required: [id, name]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        name_welsh: { type: [string, 'null'] }
+
+    EditionInput:
+      type: object
+      properties:
+        committee: { type: [string, 'null'] }
+        committee_img: { type: [string, 'null'] }
+        presenters: { type: [string, 'null'] }
+        presenters_img: { type: [string, 'null'] }
+    Edition:
+      type: object
+      required: [year]
+      properties:
+        year: { type: integer }
+        committee: { type: [string, 'null'] }
+        committee_img: { type: [string, 'null'] }
+        presenters: { type: [string, 'null'] }
+        presenters_img: { type: [string, 'null'] }
+
+    Upload:
+      type: object
+      required: [id, year, filename]
+      properties:
+        id: { type: integer }
+        year: { type: integer }
+        filename: { type: string }
+        description: { type: [string, 'null'] }
+
+    CompetitionInput:
+      type: object
+      required: [id, category_id, year, type]
+      properties:
+        id: { type: string, description: Caller-supplied primary key. }
+        category_id: { type: integer }
+        year: { type: integer }
+        type: { $ref: '#/components/schemas/EntrantType' }
+        description: { type: [string, 'null'] }
+        language: { $ref: '#/components/schemas/Language' }
+        extra_text: { type: [string, 'null'] }
+        rank: { type: integer, description: 'Defaults to 0 when omitted.' }
+        preliminary: { type: [string, 'null'] }
+    CompetitionUpdate:
+      type: object
+      description: '`id` and `year` are ignored if sent.'
+      properties:
+        category_id: { type: integer }
+        type: { $ref: '#/components/schemas/EntrantType' }
+        description: { type: [string, 'null'] }
+        language: { $ref: '#/components/schemas/Language' }
+        extra_text: { type: [string, 'null'] }
+        rank: { type: [integer, 'null'] }
+        preliminary: { type: [string, 'null'] }
+    CompetitionRow:
+      type: object
+      description: The stored row, as returned by POST and PUT (no category JOIN).
+      required: [id, category_id, year, type]
+      properties:
+        id: { type: string }
+        category_id: { type: integer }
+        year: { type: integer }
+        type: { $ref: '#/components/schemas/EntrantType' }
+        description: { type: [string, 'null'] }
+        language: { $ref: '#/components/schemas/Language' }
+        extra_text: { type: [string, 'null'] }
+        rank: { type: [integer, 'null'] }
+        preliminary: { type: [string, 'null'] }
+    Competition:
+      allOf:
+        - $ref: '#/components/schemas/CompetitionRow'
+        - type: object
+          description: GET adds read-only fields from the category JOIN.
+          properties:
+            category_name: { type: [string, 'null'] , readOnly: true }
+            category_name_welsh: { type: [string, 'null'], readOnly: true }
+
+    ParticipantInput:
+      type: object
+      required: [name, type]
+      properties:
+        name: { type: string }
+        type: { $ref: '#/components/schemas/EntrantType' }
+        surname: { type: [string, 'null'] }
+        document_id: { type: [string, 'null'] }
+        birth_date: { type: [string, 'null'] }
+        nationality: { type: [string, 'null'] }
+        residence: { type: [string, 'null'] }
+        email: { type: [string, 'null'] }
+        phone: { type: [string, 'null'] }
+        active:
+          description: Accepts boolean, number or string; coerced to 0/1.
+          oneOf:
+            - { type: integer, enum: [0, 1] }
+            - { type: boolean }
+            - { type: string }
+    Participant:
+      type: object
+      required: [id, name, type, active]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        type: { $ref: '#/components/schemas/EntrantType' }
+        surname: { type: [string, 'null'] }
+        document_id: { type: [string, 'null'] }
+        birth_date: { type: [string, 'null'] }
+        nationality: { type: [string, 'null'] }
+        residence: { type: [string, 'null'] }
+        email: { type: [string, 'null'] }
+        phone: { type: [string, 'null'] }
+        active: { type: integer, enum: [0, 1] }
+
+    RegistrationInput:
+      type: object
+      required: [participant_id, competition_id, year]
+      properties:
+        participant_id: { type: integer }
+        competition_id: { type: string }
+        year: { type: integer }
+        pseudonym: { type: [string, 'null'] }
+    Registration:
+      type: object
+      description: The stored row, as returned by POST and PUT.
+      required: [id, participant_id, competition_id, year, dropped]
+      properties:
+        id: { type: integer }
+        participant_id: { type: integer }
+        competition_id: { type: string }
+        year: { type: integer }
+        pseudonym: { type: [string, 'null'] }
+        registered_at: { type: [string, 'null'], readOnly: true }
+        dropped: { type: integer, enum: [0, 1] }
+    RegistrationItem:
+      allOf:
+        - $ref: '#/components/schemas/Registration'
+        - type: object
+          description: GET by id adds only the participant's name.
+          properties:
+            name: { type: [string, 'null'], readOnly: true }
+            surname: { type: [string, 'null'], readOnly: true }
+    RegistrationListItem:
+      allOf:
+        - $ref: '#/components/schemas/RegistrationItem'
+        - type: object
+          description: The list endpoint additionally joins participant type and competition detail.
+          properties:
+            type: { $ref: '#/components/schemas/EntrantType' }
+            comp_description: { type: [string, 'null'], readOnly: true }
+            language: { $ref: '#/components/schemas/Language' }
+
+    WorkInput:
+      type: object
+      required: [participant_id, competition_id, title]
+      properties:
+        participant_id: { type: integer }
+        competition_id: { type: string }
+        title: { type: string }
+        display_name: { type: [string, 'null'] }
+        placement: { $ref: '#/components/schemas/Placement' }
+        video_url: { type: [string, 'null'] }
+        photo_url: { type: [string, 'null'] }
+    WorkUpdate:
+      type: object
+      properties:
+        title: { type: string }
+        display_name: { type: [string, 'null'] }
+        placement: { $ref: '#/components/schemas/Placement' }
+        video_url: { type: [string, 'null'] }
+        photo_url: { type: [string, 'null'] }
+    Work:
+      type: object
+      required: [id, participant_id, competition_id, title]
+      properties:
+        id: { type: integer }
+        participant_id: { type: integer }
+        competition_id: { type: string }
+        title: { type: string }
+        display_name: { type: [string, 'null'] }
+        placement: { $ref: '#/components/schemas/Placement' }
+        date: { type: [string, 'null'], readOnly: true }
+        video_url: { type: [string, 'null'] }
+        photo_url: { type: [string, 'null'] }
+    WorkItem:
+      allOf:
+        - $ref: '#/components/schemas/Work'
+        - type: object
+          properties:
+            name: { type: [string, 'null'], readOnly: true }
+            surname: { type: [string, 'null'], readOnly: true }
+    WorkListItem:
+      allOf:
+        - $ref: '#/components/schemas/WorkItem'
+        - type: object
+          properties:
+            type: { $ref: '#/components/schemas/EntrantType' }

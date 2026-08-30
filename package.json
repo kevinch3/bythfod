@@ -4,6 +4,9 @@
   "type": "module",
   "scripts": {
     "test": "node --test",
-    "serve": "npx http-server -p 8123 -c-1"
+    "serve": "npx http-server -p 8123 -c-1",
+    "contract:sync": "node tools/sync-contract.mjs",
+    "contract:check": "node tools/sync-contract.mjs --check",
+    "build:pages": "node tools/build-static.mjs && node tools/assert-public-build.mjs"
   }
 }
