@@ -26,6 +26,8 @@ jobs:
         run: node --test
       - name: Build the offline static site
         run: node tools/build-static.mjs
+      - name: Assert the public build ships no API code or credentials
+        run: node tools/assert-public-build.mjs
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

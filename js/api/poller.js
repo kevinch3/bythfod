@@ -22,10 +22,12 @@ export function nextPollDelay(pollerState) {
   throw new TodoError('nextPollDelay: TODO(you) — see the docblock in js/api/poller.js');
 }
 
-function delayOrFallback(state) {
+function delayOrFallback(state, config = {}) {
   try { return nextPollDelay(state); }
   catch (e) {
-    if (e instanceof TodoError) return state.active ? 3000 : 15000;
+    if (e instanceof TodoError) {
+      return state.active ? (config.POLL_ACTIVE_MS ?? 3000) : (config.POLL_IDLE_MS ?? 15000);
+    }
     throw e;
   }
 }
@@ -59,12 +61,12 @@ export function startPolling({ sandbox, config, plan, board, getPosition }) {
         if (works.length) board.markDone(ordinal);
       }
       errorCount = 0;
-      board.setStatus(`en vivo · ${new Date().toLocaleTimeString()} · sondeo ${Math.round(delayOrFallback({ active, errorCount }) / 1000)}s`);
+      board.setStatus(`en vivo · ${new Date().toLocaleTimeString()} · sondeo ${Math.round(delayOrFallback({ active, errorCount }, config) / 1000)}s`);
     } catch (err) {
       errorCount += 1;
       board.setStatus(`⚠ sin respuesta del API (${errorCount})`);
     }
-    setTimeout(tick, delayOrFallback({ active, errorCount }));
+    setTimeout(tick, delayOrFallback({ active, errorCount }, config));
   }
 
   tick();

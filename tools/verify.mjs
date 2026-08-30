@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 // Prints a summary of the sandbox edition straight from the API.
 // Usage: EISTED_USER=… EISTED_PASS=… node tools/verify.mjs
-import { CONFIG } from '../js/config.js';
+import { CONFIG as SIM_CONFIG } from '../js/config.js';
+import { API_CONFIG } from '../js/api/config.js';
+const CONFIG = { ...SIM_CONFIG, ...API_CONFIG };
 import { ApiClient } from '../js/api/client.js';
 
 const arg = (name, dflt) => {

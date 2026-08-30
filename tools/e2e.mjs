@@ -3,7 +3,9 @@
 // verify via the API. Usage: node tools/e2e.mjs [--seed 42] [--award 3]
 // Requires the eistedglobal API on localhost:3000 (seeded: npm run seed)
 // and EISTED_USER / EISTED_PASS in the environment.
-import { CONFIG } from '../js/config.js';
+import { CONFIG as SIM_CONFIG } from '../js/config.js';
+import { API_CONFIG } from '../js/api/config.js';
+const CONFIG = { ...SIM_CONFIG, ...API_CONFIG };
 import { PROGRAM } from '../js/core/program.js';
 import { generateDayPlan } from '../js/core/roster.js';
 import { prepareSandbox } from '../js/api/sandbox.js';

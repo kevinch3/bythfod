@@ -104,15 +104,14 @@ const hud = new Hud({
   },
   async onConnect(values) {
     try {
-      hud.log(`→ conectando a ${CONFIG.API_BASE} …`);
-      const mod = await import('./api/sandbox.js');
-      sandbox = await mod.prepareSandbox({
-        ...values, plan: setupPlan(values.seed), config: CONFIG, log: m => hud.log(m),
+      // Single entry point to the online path; absent from the static build.
+      const { connect } = await import('./api/connect.js');
+      sandbox = await connect({
+        values, config: CONFIG, plan: setupPlan(values.seed), board,
+        log: m => hud.log(m),
+        setStatus: t => { document.getElementById('b-status').textContent = t; },
+        getPosition: () => E.positionState(engine),
       });
-      hud.log('✔ sandbox listo — pulsá COMENZAR (offline queda atrás)');
-      document.getElementById('b-status').textContent = `conectado · edición ${CONFIG.SIM_YEAR}`;
-      const { startPolling } = await import('./api/poller.js');
-      startPolling({ sandbox, config: CONFIG, plan, board, getPosition: () => E.positionState(engine) });
       hud.hideSetup();
       boot();
       interpret(E.start(engine));
