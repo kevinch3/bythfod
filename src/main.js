@@ -8,12 +8,12 @@ import { buildTimeline } from './core/timeline.ts';
 import { makeRng } from './core/rng.ts';
 import * as E from './core/engine.ts';
 import { TemplateFeedbackGenerator, generateWithTimeout } from './core/feedback.ts';
-import { Synth } from './render/synth.js';
-import { MUSIC } from './render/music.js';
-import { StageRend } from './render/stage.js';
-import { JuryRend, judgeFor } from './render/jury.js';
-import { BoardRend } from './render/board.js';
-import { Hud } from './render/hud.js';
+import { Synth } from './render/synth.ts';
+import { MUSIC } from './render/music.ts';
+import { StageRend } from './render/stage.ts';
+import { JuryRend, judgeFor } from './render/jury.ts';
+import { BoardRend } from './render/board.ts';
+import { Hud } from './render/hud.ts';
 
 const synth = new Synth();
 const stageRend = new StageRend(document.getElementById('stage'));

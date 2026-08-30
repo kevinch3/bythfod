@@ -1,17 +1,48 @@
+import type { DayPlan } from '../core/types.ts';
+import type { EngineState, positionState } from '../core/engine.ts';
 // HUD: transport controls, program drawer, setup overlay, pane scaling.
 // Pure DOM glue — all decisions live in main.js via the handlers object.
+/** Everything the HUD can ask the app to do. */
+export interface HudHandlers {
+  onPlayPause(): void;
+  onSpeed(): void;
+  onJump(ordinal: number): void;
+  onVolume(v: number): void;
+  onTheme(t: string): void;
+  onStart(values: SetupValues): void;
+  onConnect(values: SetupValues): void;
+}
+
+/** What the setup panel collects. Credentials are absent in the static build. */
+export interface SetupValues {
+  seed: number;
+  username: string | undefined;
+  password: string | undefined;
+}
+
 export class Hud {
-  constructor(handlers) {
+  private readonly h: HudHandlers;
+  private readonly $: (id: string) => HTMLElement;
+  private readonly $opt: (id: string) => HTMLElement | null;
+  private _soundOn = true;
+  private _prevOrd: number | null = null;
+
+  constructor(handlers: HudHandlers) {
     this.h = handlers;
-    const $ = id => document.getElementById(id);
+    // Two lookups, because the static build omits the API panel: $ is for
+    // elements index.html always has, $opt for the ones it may not.
+    const $ = (id: string): HTMLElement => document.getElementById(id) as HTMLElement;
+    const $opt = (id: string): HTMLElement | null => document.getElementById(id);
     this.$ = $;
+    this.$opt = $opt;
 
     $('bPlay').onclick = () => this.h.onPlayPause();
     $('bSpeed').onclick = () => this.h.onSpeed();
     $('bProgram').onclick = () => this.toggleDrawer();
-    $('bTheme').onchange = e => this.h.onTheme(e.target.value);
+    ($('bTheme') as HTMLSelectElement).onchange = e =>
+      this.h.onTheme((e.target as HTMLSelectElement).value);
     // The static build ships without the API panel, so these may not exist.
-    const connect = $('bConnect');
+    const connect = $opt('bConnect');
     if (connect) connect.onclick = () => this.h.onConnect(this.setupValues());
     $('bStartOffline').onclick = () => this.h.onStart(this.setupValues());
 
@@ -23,7 +54,7 @@ export class Hud {
     };
 
     document.addEventListener('keydown', e => {
-      if (e.target.tagName === 'INPUT') return;
+      if ((e.target as HTMLElement | null)?.tagName === 'INPUT') return;
       if (e.key === ' ') { e.preventDefault(); this.h.onPlayPause(); }
     });
 
@@ -31,25 +62,25 @@ export class Hud {
     this.fit();
   }
 
-  setupValues() {
+  setupValues(): SetupValues {
     return {
-      seed: parseInt(this.$('inSeed').value, 10) || 42,
+      seed: parseInt((this.$('inSeed') as HTMLInputElement).value, 10) || 42,
       // Credentials belong to the caller, not the HUD; absent in the static build.
-      username: this.$('inUser')?.value || undefined,
-      password: this.$('inPass')?.value || undefined,
+      username: (this.$opt('inUser') as HTMLInputElement | null)?.value || undefined,
+      password: (this.$opt('inPass') as HTMLInputElement | null)?.value || undefined,
     };
   }
 
-  showSetup() { this.$('setup-overlay').hidden = false; }
-  hideSetup() { this.$('setup-overlay').hidden = true; }
-  log(msg) {
+  showSetup(): void { this.$('setup-overlay').hidden = false; }
+  hideSetup(): void { this.$('setup-overlay').hidden = true; }
+  log(msg: string): void {
     const el = this.$('setupLog');
     if (!el) return; // static build ships no setup log
     el.textContent += `${msg}\n`;
     el.scrollTop = el.scrollHeight;
   }
 
-  buildProgram(plan) {
+  buildProgram(plan: DayPlan): void {
     const drawer = this.$('progList');
     drawer.innerHTML = plan.sessions.map(s =>
       `<div class="prog-session">${s.label}</div>` +
@@ -59,19 +90,19 @@ export class Hud {
           `<span class="prog-state"></span><span class="prog-tag">${tag}</span> ${item.program.label}</div>`;
       }).join('')
     ).join('');
-    drawer.querySelectorAll('.prog-item').forEach(el => {
-      el.onclick = () => this.h.onJump(+el.dataset.ord);
+    drawer.querySelectorAll<HTMLElement>('.prog-item').forEach(el => {
+      el.onclick = () => this.h.onJump(Number(el.dataset.ord));
     });
   }
 
-  toggleDrawer() { this.$('drawer').hidden = !this.$('drawer').hidden; }
+  toggleDrawer(): void { this.$('drawer').hidden = !this.$('drawer').hidden; }
 
-  markAwarded(ordinal, desierto = false) {
+  markAwarded(ordinal: number, desierto = false): void {
     const el = this.$('progList').querySelector(`[data-ord="${ordinal}"] .prog-state`);
     if (el) { el.textContent = desierto ? '∅' : '🏆'; el.classList.add('done'); }
   }
 
-  update(pos, engineSt) {
+  update(pos: ReturnType<typeof positionState>, engineSt: EngineState): void {
     this.$('bPlay').textContent = !engineSt.started ? '▶ COMENZAR'
       : engineSt.paused ? '▶ SEGUIR' : '⏸ PAUSA';
     this.$('bSpeed').textContent = `⏩ ×${engineSt.speed}`;
@@ -83,11 +114,11 @@ export class Hud {
     }
   }
 
-  setName(t) { this.$('actName').textContent = t; }
-  setSub(t) { this.$('subtitle').textContent = t; }
+  setName(t: string): void { this.$('actName').textContent = t; }
+  setSub(t: string): void { this.$('subtitle').textContent = t; }
 
-  fit() {
+  fit(): void {
     const scale = Math.min(1, (innerWidth - 24) / 1170, (innerHeight - 130) / 676);
-    document.getElementById('viewport').style.setProperty('--app-scale', scale.toFixed(3));
+    this.$('viewport').style.setProperty('--app-scale', scale.toFixed(3));
   }
 }

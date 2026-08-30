@@ -4,12 +4,36 @@
 //  HTML/CSS RENDERER  — replaces canvas Rend
 //  Stage coordinate space: 256×224 (×3 → 768×672 CSS)
 // ─────────────────────────────────────────────
+/** What the engine asks the stage to draw. */
+export interface StageState {
+  actType: string;
+  phase: string;
+  overlay: number;
+  n: number;
+  spotMode: string;
+  actT: number;
+  banner?: string | null;
+}
+
+/** A per-frame updater: given the frame counter and current state, mutate DOM. */
+type Anim = (f: number, state: StageState) => void;
+
 export class StageRend {
   static S     = 3;
   static SKINS = ['#eec8a0','#deb07c','#bc7440','#8a5028','#663018','#eed4b8'];
   static ROBES = ['#1c3288','#142472','#223694','#182a82','#28389e'];
 
-  constructor(stageEl) {
+  private readonly stage: HTMLElement;
+  private f: number;
+  private _prevType: string | null;
+  private _prevPhase: string | null;
+  private _anims: Anim[];
+  private _sparkling: boolean;
+  private _prevBanner: string | null | undefined;
+  /** The stage's fixed layers, by id suffix. */
+  private readonly L: Record<string, HTMLElement>;
+
+  constructor(stageEl: HTMLElement) {
     this.stage = stageEl;
     this.f     = 0;
     this._prevType   = null;
@@ -20,7 +44,7 @@ export class StageRend {
 
     this.L = {};
     ['bg','floor','risers','curtains','performers','spots','audience','overlay','banner','sparkles']
-      .forEach(id => { this.L[id] = stageEl.querySelector(`#l-${id}`); });
+      .forEach(id => { this.L[id] = stageEl.querySelector(`#l-${id}`) as HTMLElement; });
 
     this._buildFootlights();
     this._buildAudience();
@@ -28,7 +52,7 @@ export class StageRend {
 
   // ── PUBLIC API ───────────────────────────────────────────────────────
 
-  render(state) {
+  render(state: StageState): void {
     const f = ++this.f;
 
     // Rebuild performer DOM only when act or phase changes
@@ -44,7 +68,7 @@ export class StageRend {
     this._anims.forEach(fn => fn(f, state));
 
     // Overlay fade
-    this.L.overlay.style.opacity = state.overlay ?? 0;
+    this.L.overlay.style.opacity = String(state.overlay ?? 0);
 
     // Banner (only update on change)
     if (state.banner !== this._prevBanner) {
@@ -64,11 +88,11 @@ export class StageRend {
     this.L.audience.classList.toggle('applause', state.phase === 'applause');
   }
 
-  setTheme(name) { this.stage.dataset.theme = name; }
+  setTheme(name: string): void { this.stage.dataset.theme = name; }
 
   // ── SCENE ────────────────────────────────────────────────────────────
 
-  _buildFootlights() {
+  _buildFootlights(): void {
     const S = StageRend.S;
     for (let i = 0; i < 8; i++) {
       const d = this._el('div', 'footlight');
@@ -80,7 +104,7 @@ export class StageRend {
 
   // ── AUDIENCE ─────────────────────────────────────────────────────────
 
-  _buildAudience() {
+  _buildAudience(): void {
     const S = StageRend.S, au = this.L.audience;
     let s = 7919;
     const rn = () => { s = (s * 1664525 + 1013904223) & 0xffffffff; return (s >>> 0) / 4294967295; };
@@ -114,7 +138,7 @@ export class StageRend {
 
   // ── PERFORMERS ───────────────────────────────────────────────────────
 
-  _buildPerfs(state) {
+  _buildPerfs(state: StageState): void {
     this.L.performers.innerHTML = '';
     this._anims = [];
     const {actType, n, phase} = state;
@@ -148,18 +172,18 @@ export class StageRend {
     }
   }
 
-  _walkers() {
-    return [...this.L.performers.children].filter(el =>
+  _walkers(): HTMLElement[] {
+    return ([...this.L.performers.children] as HTMLElement[]).filter(el =>
       el.classList.contains('person') && !el.classList.contains('facing-back'));
   }
 
-  _walkIn() {
+  _walkIn(): void {
     const S = StageRend.S;
     this._walkers().forEach((el, i) => {
       const targetX = parseInt(el.style.left, 10) / S;
       const startDx = (targetX < 128 ? -(targetX + 24) : (256 - targetX) + 24) * S;
       const T = 50, delay = i * 4;
-      let f0 = null;
+      let f0: number | null = null;
       this._anims.push(f => {
         if (f0 === null) f0 = f;
         const t = f - f0 - delay;
@@ -174,13 +198,13 @@ export class StageRend {
     });
   }
 
-  _walkOff() {
+  _walkOff(): void {
     const S = StageRend.S;
     this._walkers().forEach((el, i) => {
       const x = parseInt(el.style.left, 10) / S;
       const endDx = (x < 128 ? -(x + 24) : (256 - x) + 24) * S;
       const T = 55, delay = 12 + i * 3; // a short bow to the applause first
-      let f0 = null;
+      let f0: number | null = null;
       this._anims.push(f => {
         if (f0 === null) f0 = f;
         const t = f - f0 - delay;
@@ -194,7 +218,7 @@ export class StageRend {
     });
   }
 
-  _choir(n, anim) {
+  _choir(n: number, anim: boolean): void {
     const rows = [
       {footY: 129, count: Math.min(5, n)},
       {footY: 115, count: Math.min(4, Math.max(0, n - 5))},
@@ -218,7 +242,7 @@ export class StageRend {
     }
   }
 
-  _soloist(anim) {
+  _soloist(anim: boolean): void {
     const mic = this._prop('mic', 127, 132);
     const p   = this._person(128, 132, 2, 0);
     this.L.performers.append(mic, p);
@@ -228,7 +252,7 @@ export class StageRend {
     });
   }
 
-  _duo(anim) {
+  _duo(anim: boolean): void {
     const m1 = this._prop('mic', 99, 132),  p1 = this._person(100, 132, 0, 0);
     const m2 = this._prop('mic', 157, 132), p2 = this._person(158, 132, 4, 2);
     this.L.performers.append(m1, p1, m2, p2);
@@ -240,7 +264,7 @@ export class StageRend {
     });
   }
 
-  _violinist(anim) {
+  _violinist(anim: boolean): void {
     const p  = this._person(128, 132, 1, 2);
     const vn = this._prop('violin', 128, 132);
     this.L.performers.append(p, vn);
@@ -250,7 +274,7 @@ export class StageRend {
     });
   }
 
-  _trumpeter(anim) {
+  _trumpeter(anim: boolean): void {
     const p  = this._person(128, 132, 4, 3);
     const tr = this._prop('trumpet', 120, 132);
     this.L.performers.append(p, tr);
@@ -260,7 +284,7 @@ export class StageRend {
     });
   }
 
-  _reciter(anim) {
+  _reciter(anim: boolean): void {
     const pod = this._prop('podium', 120, 136);
     const p   = this._person(128, 132, 0, 4);
     this.L.performers.append(pod, p);
@@ -269,7 +293,7 @@ export class StageRend {
     });
   }
 
-  _trio(anim) {
+  _trio(anim: boolean): void {
     [100, 128, 156].forEach((x, i) => {
       const mic = this._prop('mic', x - 1, 132);
       const p   = this._person(x, 132, i * 2 + 1, i);
@@ -281,7 +305,7 @@ export class StageRend {
     });
   }
 
-  _announcer() {
+  _announcer(): void {
     const p1  = this._person(29, 160, 0, 0);
     const p2  = this._person(47, 160, 5, 0);
     const pod = this._prop('atril', 38, 160);
@@ -292,13 +316,13 @@ export class StageRend {
     });
   }
 
-  _pianist() {
+  _pianist(): void {
     const piano = this._prop('piano', 200, 110);
     const p     = this._personBack(203, 132, 0, 4);
     this.L.performers.append(piano, p);
   }
 
-  _dancer(n, anim) {
+  _dancer(n: number, anim: boolean): void {
     if (n <= 1) {
       this.L.performers.appendChild(this._folkFig(128, 132, 0, anim));
       return;
@@ -307,11 +331,12 @@ export class StageRend {
     [74, 100, 128, 156, 182].forEach((x, i) => this.L.performers.appendChild(this._folkFig(x, 130, i, anim)));
   }
 
-  _longways(anim) {
+  _longways(anim: boolean): void {
     const S = StageRend.S;
     const xs = [52, 86, 118, 150, 184], P = 420;
-    const ease = p => p < .5 ? 2*p*p : 1 - Math.pow(-2*p+2, 2)/2;
-    const seg  = (s, e, t) => ease(Math.max(0, Math.min(1, (t - s) / (e - s))));
+    const ease = (p: number) => p < .5 ? 2*p*p : 1 - Math.pow(-2*p+2, 2)/2;
+    /** Eased progress of `t` through the window [s, e]. */
+    const seg  = (s: number, e: number, t: number) => ease(Math.max(0, Math.min(1, (t - s) / (e - s))));
     const CROSS = 11, yA = 120, yB = 134, yMid = 127;
 
     const couples = xs.map((bx, i) => {
@@ -338,7 +363,7 @@ export class StageRend {
     });
   }
 
-  _ceremoni(anim) {
+  _ceremoni(anim: boolean): void {
     const S = StageRend.S;
     const throne     = this._prop('throne', 128, 148);
     const trumpeter  = this._person(80, 132, 4, 3);
@@ -369,7 +394,7 @@ export class StageRend {
 
   // ── DOM BUILDERS ──────────────────────────────────────────────────────
 
-  _person(x, footY, skinIdx, robeIdx) {
+  _person(x: number, footY: number, skinIdx: number, robeIdx: number): HTMLElement {
     const S    = StageRend.S;
     const skin = StageRend.SKINS[skinIdx % 6];
     const robe = StageRend.ROBES[robeIdx % 5];
@@ -383,13 +408,13 @@ export class StageRend {
     return el;
   }
 
-  _personBack(x, footY, skinIdx, robeIdx) {
+  _personBack(x: number, footY: number, skinIdx: number, robeIdx: number): HTMLElement {
     const el = this._person(x, footY, skinIdx, robeIdx);
     el.classList.add('facing-back');
     return el;
   }
 
-  _folkFig(x, footY, idx, anim) {
+  _folkFig(x: number, footY: number, idx: number, anim: boolean): HTMLElement {
     const S      = StageRend.S;
     const female = !(idx & 1);
     const slot   = Math.floor(idx / 2) % 6;
@@ -412,7 +437,7 @@ export class StageRend {
     return el;
   }
 
-  _prop(type, x, footY) {
+  _prop(type: string, x: number, footY: number): HTMLElement {
     const S  = StageRend.S;
     const el = this._el('div', `prop prop-${type}`,
       `left:${x*S}px;top:${footY*S}px`);
@@ -421,7 +446,7 @@ export class StageRend {
 
   // ── SPARKLES ──────────────────────────────────────────────────────────
 
-  _setSparkles(on) {
+  _setSparkles(on: boolean): void {
     const l = this.L.sparkles;
     if (!on) { l.innerHTML = ''; return; }
     const cols = ['#ffdd44','#ff88cc','#88ffcc','#aaddff','#ffaa44'];
@@ -435,7 +460,7 @@ export class StageRend {
 
   // ── UTIL ──────────────────────────────────────────────────────────────
 
-  _el(tag, cls, css = '') {
+  _el(tag: string, cls: string, css = ''): HTMLElement {
     const el = document.createElement(tag);
     el.className = cls;
     if (css) el.style.cssText = css;

@@ -2,7 +2,7 @@
 // Segment: { kind, itemOrdinal, sessionId, entrantIdx?, dur, stage, music?, banner? }
 import { makeRng } from './rng.ts';
 import type { DayPlan, Entrant, Kind } from './types.ts';
-import { MUSIC_BY_KIND } from '../render/music.js';
+import { MUSIC_BY_KIND } from '../render/music.ts';
 
 // Act types the vendored StageRend knows how to build ('empty'/'award' added in M3).
 export const STAGE_ACTS = [
