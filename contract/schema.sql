@@ -65,7 +65,10 @@ CREATE TABLE IF NOT EXISTS work (
   id             INTEGER PRIMARY KEY AUTOINCREMENT,
   participant_id INTEGER NOT NULL REFERENCES participant(id),
   display_name   TEXT,
-  placement      TEXT    CHECK(placement IN ('1','2','3','mencion',NULL)),
+  -- NB: do NOT add NULL to this list. `x IN (...,NULL)` evaluates to NULL for a
+  -- non-match, and a CHECK only rejects on false, so including it disables the
+  -- constraint entirely. The column is nullable already.
+  placement      TEXT    CHECK(placement IN ('1','2','3','mencion')),
   competition_id TEXT    NOT NULL REFERENCES competition(id),
   title          TEXT    NOT NULL,
   date           TEXT    DEFAULT (datetime('now')),

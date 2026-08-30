@@ -732,21 +732,22 @@ components:
       description: |
         Null means no placement awarded (or not yet adjudicated).
 
-        **QUIRK (B10) — this vocabulary is NOT currently enforced.** The column's
-        constraint is `CHECK(placement IN ('1','2','3','mencion',NULL))`, and for
-        any non-matching value that expression evaluates to NULL rather than
-        false. A CHECK only rejects on false, so the constraint never fires and
-        the API stores any string. Removing `NULL` from the list restores
-        enforcement (the column is nullable regardless, so it was never needed).
-        Verified by contract scenario 7. Clients must not assume the value they
-        read back is one of these.
+        Enforced by a CHECK constraint. Note for anyone editing the schema: do
+        **not** add `NULL` to that constraint's value list. `x IN (...,NULL)`
+        evaluates to NULL for a non-match and a CHECK rejects only on false, so
+        including it disables the constraint entirely — which is exactly the bug
+        B10 fixed. The column is nullable regardless.
+
+        An invalid value is rejected by the database, so it surfaces per the
+        constraint-error rules (see B1/B2 notes) rather than as a clean 400.
 
     Language:
       type: [string, 'null']
       enum: [Cymraeg, Castellano, English, Aleman, Polaco, Frances, Portugues, Italiano, Otro, null]
       description: |
         Enforced by SQL CHECK. Note the values carry no diacritics (`Aleman`,
-        not `Alemán`).
+        not `Alemán`). Unlike Placement before B10, this constraint does not list
+        NULL and therefore does enforce.
 
     CategoryInput:
       type: object

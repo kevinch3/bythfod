@@ -248,14 +248,10 @@ scenario('5', 'PATCH /drop works with NO body and a JSON content-type', async (c
 });
 
 // ── #7, #8 — vocabulary locks ──────────────────────────────────────────────
-// ASSUMPTION #7 IS FALSE. The CHECK constraint is inert:
-//   CHECK(placement IN ('1','2','3','mencion',NULL))
-// For any non-matching value the IN expression evaluates to NULL, and a CHECK
-// only rejects on FALSE — so it never rejects anything. The NULL in the list,
-// presumably added to permit nulls (already permitted, the column is nullable),
-// silently disabled the whole constraint. This test pins the CURRENT behaviour;
-// it will fail when B10 lands, which is the signal to update the spec with it.
-scenario('7', 'placement is NOT enforced — any string is accepted (B10)', async (ctx) => {
+// #7 — restored by B10. The constraint used to list NULL among its values, which
+// made `x IN (...,NULL)` yield NULL for a non-match; a CHECK only rejects on
+// false, so it never fired. Removing NULL restored enforcement.
+scenario('7', 'placement accepts 1/2/3/mencion and rejects anything else (B10)', async (ctx) => {
   const comp = await makeCompetition(ctx, 70);
   const p = await makeParticipant(ctx, 70);
   for (const placement of ['1', '2', '3', 'mencion']) {
@@ -264,15 +260,17 @@ scenario('7', 'placement is NOT enforced — any string is accepted (B10)', asyn
     });
     assert.equal(res.status, 201, `placement "${placement}" was rejected`);
   }
+  const nullOk = await ctx.api.post('/works', {
+    participant_id: p.id, competition_id: comp, title: 'no placement', placement: null,
+  });
+  assert.equal(nullOk.status, 201, 'a null placement was rejected — the column must stay nullable');
+
   const bad = await ctx.api.post('/works', {
     participant_id: p.id, competition_id: comp, title: 'bad', placement: 'primero',
   });
-  assert.equal(bad.status, 201,
-    'an invalid placement was rejected — B10 is fixed, update this test and the spec');
-  assert.equal(bad.body.placement, 'primero', 'the value was silently altered');
-  ctx.note('7', 'ASSUMPTION FALSE: placement accepts ANY string. The CHECK lists ' +
-    "NULL among its values, so `x IN (...,NULL)` yields NULL for a non-match and " +
-    'the constraint never rejects. Nothing validates placement anywhere (B10).');
+  assert.notEqual(bad.status, 201, 'an invalid placement was accepted — B10 has regressed');
+  ctx.note('7', `invalid placement rejected with ${bad.status} ${JSON.stringify(bad.body)} ` +
+    `(a database constraint, so still 5xx until B1 maps it to 400)`);
 });
 
 scenario('8', "type enum IND/GRU is shared by competitions and participants", async (ctx) => {
