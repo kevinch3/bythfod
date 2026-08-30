@@ -38,6 +38,17 @@ jobs:
             exit 1
           }
 
+      # The contract suite runs inside `npm test` against the in-process mock,
+      # so this asserts it actually ran rather than silently doing nothing.
+      - name: The contract suite must have run against the mock
+        run: |
+          n=$(npm test 2>&1 | grep -c '^ok .* contract \[' || true)
+          echo "contract scenarios executed: $n"
+          test "$n" -ge 20 || {
+            echo "::error::expected at least 20 contract scenarios, ran $n"
+            exit 1
+          }
+
       - name: Build and assert the public build ships no API code
         run: npm run build:pages
 
