@@ -6,7 +6,7 @@
 // item's printed ordinal — so a different running order, or re-drawing one
 // item's winners, never changes anyone's name or a neighbouring item's cast.
 import { makeRng } from './rng.ts';
-import { makeNameGen } from './names.js';
+import { makeNameGen } from './names.ts';
 
 const GROUP_SIZES = {
   coro: [6, 12], conjunto: [3, 6], parti: [4, 8], dawns: [2, 10],

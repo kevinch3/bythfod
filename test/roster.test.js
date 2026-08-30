@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { PROGRAM } from '../src/core/program.js';
+import { PROGRAM } from '../src/core/program.ts';
 import { makeRng } from '../src/core/rng.ts';
 import { generateDayPlan, drawPlacements, shuffleKeepingFixed } from '../src/core/roster.js';
 

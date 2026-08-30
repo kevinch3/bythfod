@@ -1,8 +1,8 @@
 // Bootstrap + effect interpreter: the only file that touches DOM, audio,
 // network AND the engine. The engine emits data effects; this file gives
 // them consequences (synth pieces, API awards, jury lines).
-import { CONFIG } from './config.js';
-import { PROGRAM } from './core/program.js';
+import { CONFIG } from './config.ts';
+import { PROGRAM } from './core/program.ts';
 import { generateDayPlan } from './core/roster.js';
 import { buildTimeline } from './core/timeline.js';
 import { makeRng } from './core/rng.ts';

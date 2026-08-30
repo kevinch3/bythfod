@@ -6,7 +6,7 @@
 // and tools/assert-public-build.mjs.
 import { prepareSandbox } from './sandbox.js';
 import { startPolling } from './poller.js';
-import { API_CONFIG } from './config.js';
+import { API_CONFIG } from './config.ts';
 
 /**
  * Log in, publish the day plan, and start polling results onto the board.

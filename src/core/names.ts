@@ -1,3 +1,5 @@
+import type { Rng } from './rng.ts';
+import type { Kind } from './types.ts';
 // Fictional Welsh-Patagonian name banks + generators. Pure module.
 export const GROUP_KINDS = ['coro', 'conjunto', 'parti', 'dawns', 'deuawd', 'instrumental', 'cydadrodd'];
 
@@ -31,15 +33,16 @@ const TEMPLATES = {
   cydadrodd: ['Parti Cydadrodd {place}', 'Lleisiau {place}'],
 };
 
-export function makeNameGen(rng) {
+export function makeNameGen(rng: Rng) {
   return {
     person() {
       return { name: rng.pick(GIVEN), surname: rng.pick(SURNAMES) };
     },
-    group(kind) {
+    group(kind: Kind): string {
       if (kind === 'deuawd') return `${rng.pick(GIVEN)} a ${rng.pick(GIVEN)}`;
-      const tpl = rng.pick(TEMPLATES[kind] || TEMPLATES.conjunto);
-      return tpl.replace('{place}', rng.pick(PLACES));
+      // Not every kind has its own templates; conjunto is the general fallback.
+      const templates: readonly string[] = TEMPLATES[kind as keyof typeof TEMPLATES] ?? TEMPLATES.conjunto;
+      return rng.pick(templates).replace('{place}', rng.pick(PLACES));
     },
   };
 }

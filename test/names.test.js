@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeRng } from '../src/core/rng.ts';
-import { makeNameGen, GROUP_KINDS } from '../src/core/names.js';
+import { makeNameGen, GROUP_KINDS } from '../src/core/names.ts';
 
 test('person() returns non-empty name and surname', () => {
   const g = makeNameGen(makeRng(1));

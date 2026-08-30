@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { PROGRAM } from '../src/core/program.js';
+import { PROGRAM } from '../src/core/program.ts';
 import { generateDayPlan } from '../src/core/roster.js';
 import { buildTimeline, STAGE_ACTS } from '../src/core/timeline.js';
 import { MUSIC, MUSIC_BY_KIND } from '../src/render/music.js';
