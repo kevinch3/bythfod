@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { pollWindow, nextPollDelay } from '../js/api/poller.js';
+import { pollWindow, nextPollDelay } from '../src/api/poller.js';
 
 test('pollWindow returns the current item plus the three before it in running order', () => {
   const order = [10, 11, 12, 13, 14, 15];

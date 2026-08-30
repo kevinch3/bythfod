@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { ApiError } from '../js/api/client.js';
-import { prepareSandbox, CATEGORY_BY_KIND } from '../js/api/sandbox.js';
+import { ApiError } from '../src/api/client.js';
+import { prepareSandbox, CATEGORY_BY_KIND } from '../src/api/sandbox.js';
 
 const CONFIG = { API_BASE: 'http://x/api', SIM_YEAR: 2099, COMP_PREFIX: 'BY' };
 

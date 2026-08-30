@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { ApiClient, ApiError } from '../js/api/client.js';
+import { ApiClient, ApiError } from '../src/api/client.js';
 
 // Scriptable fetch stub: pops responses in order, records every request.
 function stubFetch(script) {

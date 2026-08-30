@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { makeRng } from '../js/core/rng.js';
+import { makeRng } from '../src/core/rng.js';
 
 test('same seed produces the same sequence', () => {
   const a = makeRng(42), b = makeRng(42);

@@ -1,9 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { makeRng } from '../js/core/rng.js';
+import { makeRng } from '../src/core/rng.js';
 import {
   FeedbackGenerator, TemplateFeedbackGenerator, pickFragment, generateWithTimeout,
-} from '../js/core/feedback.js';
+} from '../src/core/feedback.js';
 
 const item = (kind, language, placements) => ({
   ordinal: 1,

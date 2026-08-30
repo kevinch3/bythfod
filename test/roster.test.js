@@ -1,8 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { PROGRAM } from '../js/core/program.js';
-import { makeRng } from '../js/core/rng.js';
-import { generateDayPlan, drawPlacements, shuffleKeepingFixed } from '../js/core/roster.js';
+import { PROGRAM } from '../src/core/program.js';
+import { makeRng } from '../src/core/rng.js';
+import { generateDayPlan, drawPlacements, shuffleKeepingFixed } from '../src/core/roster.js';
 
 const flat = plan => plan.sessions.flatMap(s => s.items);
 
