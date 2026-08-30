@@ -108,7 +108,9 @@ export async function prepareSandbox({
   }
   // The API's ?q= is a LIKE '%…%' over name/surname/document_id, so it can match
   // rows we never created. Delete only what is provably ours: our document_id marker.
-  const found = await api.getParticipants(SIM_PREFIX);
+  // includeInactive, or the reset would stop seeing rows soft-deleted by older
+  // runs — the residue B3 now hides from the default listing.
+  const found = await api.getParticipants(SIM_PREFIX, { includeInactive: true });
   let dropped = 0;
   for (const p of found) {
     // id is an autoincrement rowid; our marker lives in document_id.

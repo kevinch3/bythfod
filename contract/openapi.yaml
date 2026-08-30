@@ -410,12 +410,15 @@ paths:
       summary: List or search participants
       tags: [participants]
       description: |
-        Ordered `surname ASC, name ASC`.
-
-        **QUIRK (B3)** — soft-deleted participants (`active = 0`) are **still
-        returned**; there is no `active` filter. Clients must filter themselves.
+        Ordered `surname ASC, name ASC`. Returns only active participants
+        unless `includeInactive=1` — deleting is a soft delete, so the inactive
+        ones are still there to ask for.
       parameters:
         - { name: type, in: query, schema: { $ref: '#/components/schemas/EntrantType' } }
+        - name: includeInactive
+          in: query
+          schema: { type: string, enum: ['1'] }
+          description: Pass `1` to include soft-deleted (`active = 0`) participants.
         - name: q
           in: query
           schema: { type: string }
@@ -455,7 +458,7 @@ paths:
       operationId: getParticipant
       summary: Get a participant
       tags: [participants]
-      description: '**QUIRK (B3)** — returns inactive participants too.'
+      description: Returns a participant regardless of `active`; the filter is on the list endpoint only.
       responses:
         '200':
           description: OK
@@ -617,20 +620,11 @@ paths:
       tags: [registrations]
       summary: Withdraw a registration (soft delete)
       description: |
-        Sets `dropped = 1`. Takes no request body.
-
-        **QUIRK (B6)** — returns `200` with `{ message }` where every sibling
-        mutation returns `204`. There is no hard DELETE for registrations (B9),
-        so this is the only removal path and the row persists forever.
+        Sets `dropped = 1`; the row remains and still blocks deleting its
+        competition. Takes no request body. To remove a registration entirely,
+        use `DELETE /registrations/{id}`.
       responses:
-        '200':
-          description: '`{ message: "Registration dropped" }`'
-          content:
-            application/json:
-              schema:
-                type: object
-                required: [message]
-                properties: { message: { type: string } }
+        '204': { description: Withdrawn }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '404': { $ref: '#/components/responses/NotFound' }
 

@@ -110,7 +110,14 @@ export class ApiClient {
   deleteCompetition(id: string) { return this._req<null>('DELETE', `/competitions/${id}`); }
 
   // Participants
-  getParticipants(q?: string) { return this._req<Participant[]>('GET', `/participants${q ? `?q=${encodeURIComponent(q)}` : ''}`); }
+  /** Active only by default; includeInactive picks up soft-deleted rows too. */
+  getParticipants(q?: string, { includeInactive = false } = {}) {
+    const p = new URLSearchParams();
+    if (q) p.set('q', q);
+    if (includeInactive) p.set('includeInactive', '1');
+    const qs = p.toString();
+    return this._req<Participant[]>('GET', `/participants${qs ? `?${qs}` : ''}`);
+  }
   createParticipant(data: S['ParticipantInput']) { return this._req<Participant>('POST', '/participants', data); }
   /** hard:true removes the row; the default deactivates it (active = 0). */
   deleteParticipant(id: number, { hard = false }: { hard?: boolean } = {}) {
@@ -133,7 +140,7 @@ export class ApiClient {
     return this._req<Registration[]>('GET', `/registrations${qs ? `?${qs}` : ''}`);
   }
   createRegistration(data: S['RegistrationInput']) { return this._req<Registration>('POST', '/registrations', data); }
-  dropRegistration(id: number) { return this._req<{ message: string }>('PATCH', `/registrations/${id}/drop`); }
+  dropRegistration(id: number) { return this._req<null>('PATCH', `/registrations/${id}/drop`); }
   deleteRegistration(id: number) { return this._req<null>('DELETE', `/registrations/${id}`); }
 
   // Works
