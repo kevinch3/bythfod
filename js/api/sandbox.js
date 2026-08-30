@@ -65,9 +65,18 @@ export async function prepareSandbox({ plan, config, username, password, log = (
   // 3. Reset previous sandbox data (works → registrations → participants)
   const comps = await api.getCompetitions(year);
   const sandboxComps = comps.filter(c => String(c.id).startsWith(prefix));
+  // Hard-delete rather than soft-drop. Dropping left the row in place, which
+  // kept the competition permanently undeletable and made every past run
+  // accumulate: the reset could not even SEE previously dropped rows, because
+  // the list endpoint hides them by default. dropped:'all' plus a real DELETE
+  // is what turns this back into an actual reset.
+  let removedRegs = 0;
   for (const comp of sandboxComps) {
     for (const w of await api.getWorks(comp.id)) await api.deleteWork(w.id);
-    for (const r of await api.getRegistrations({ year, comp: comp.id })) await api.dropRegistration(r.id);
+    for (const r of await api.getRegistrations({ year, comp: comp.id, dropped: 'all' })) {
+      await api.deleteRegistration(r.id);
+      removedRegs++;
+    }
   }
   // The API's ?q= is a LIKE '%…%' over name/surname/document_id, so it can match
   // rows we never created. Delete only what is provably ours: our document_id marker.
@@ -79,7 +88,7 @@ export async function prepareSandbox({ plan, config, username, password, log = (
     await api.deleteParticipant(p.id);
     dropped++;
   }
-  log(`✔ sandbox reseteado (${sandboxComps.length} competencias previas, ${dropped}/${found.length} participantes)`);
+  log(`✔ sandbox reseteado (${sandboxComps.length} competencias, ${removedRegs} inscripciones borradas, ${dropped}/${found.length} participantes)`);
 
   // 4. Publish the plan: upsert competitions, create participants + registrations
   const haveComp = new Set(sandboxComps.map(c => c.id));

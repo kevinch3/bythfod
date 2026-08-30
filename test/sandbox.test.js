@@ -56,6 +56,7 @@ function fakeClient({ categories = [], competitions = [], works = {}, registrati
     deleteWork: rec('deleteWork', () => null),
     getRegistrations: rec('getRegistrations', ({ comp }) => registrations[comp] ?? []),
     dropRegistration: rec('dropRegistration', () => ({})),
+    deleteRegistration: rec('deleteRegistration', () => null),
     getParticipants: rec('getParticipants', () => participants),
     createParticipant: rec('createParticipant', d => ({ id: nextId++, ...d })),
     deleteParticipant: rec('deleteParticipant', () => null),
@@ -91,7 +92,7 @@ test('tolerates an existing edition (409) and sets its flavor', async () => {
   assert.ok(upd[2].committee.length > 3);
 });
 
-test('reset deletes works before dropping registrations, then soft-deletes SIM participants', async () => {
+test('reset deletes works before registrations, and removes rather than drops them', async () => {
   const client = fakeClient({
     competitions: [{ id: 'BY209901' }, { id: 'CH209801' }],
     works: { BY209901: [{ id: 7 }] },
@@ -101,11 +102,25 @@ test('reset deletes works before dropping registrations, then soft-deletes SIM p
   await prep(client);
   const names = client.calls.map(c => c[0]);
   const iDelWork = names.indexOf('deleteWork');
-  const iDrop = names.indexOf('dropRegistration');
+  const iDelReg = names.indexOf('deleteRegistration');
   const iDelPart = names.indexOf('deleteParticipant');
-  assert.ok(iDelWork >= 0 && iDrop >= 0 && iDelPart >= 0, 'reset steps missing');
-  assert.ok(iDelWork < iDrop, 'works must be deleted before registrations are dropped');
+  assert.ok(iDelWork >= 0 && iDelReg >= 0 && iDelPart >= 0, 'reset steps missing');
+  assert.ok(iDelWork < iDelReg, 'works must be deleted before their registrations');
+  assert.ok(!names.includes('dropRegistration'),
+    'reset soft-dropped a registration — the row would survive and block deletion forever');
   assert.ok(!client.calls.some(c => c[0] === 'getWorks' && c[1] === 'CH209801'), 'touched a non-sandbox competition');
+});
+
+test('reset asks for dropped registrations too, or it cannot clean up past runs', async () => {
+  const client = fakeClient({
+    competitions: [{ id: 'BY209901' }],
+    registrations: { BY209901: [{ id: 8 }] },
+  });
+  await prep(client);
+  const call = client.calls.find(c => c[0] === 'getRegistrations' && c[1]?.comp === 'BY209901');
+  assert.ok(call, 'reset never listed the competition registrations');
+  assert.equal(call[1].dropped, 'all',
+    'reset listed only live registrations — previously dropped rows stay invisible and accumulate');
 });
 
 test('publishPlan upserts: PUT for existing comps, POST for new, with language mapped', async () => {

@@ -251,6 +251,21 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '404': { $ref: '#/components/responses/NotFound' }
 
+    delete:
+      operationId: deleteEdition
+      summary: Delete an edition
+      tags: [editions]
+      description: |
+        Hard delete, no cascade. `competition.year` and `upload.year` reference
+        `edition(year)`, so an edition that still has content is rejected with
+        **409** (`code: CONFLICT_REFERENCE`). Removing a whole year's data in one
+        call is deliberately not offered — delete the content first.
+      responses:
+        '204': { description: Deleted }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
   /editions/{year}/uploads:
     parameters:
       - $ref: '#/components/parameters/Year'
@@ -485,14 +500,20 @@ paths:
       summary: List registrations
       tags: [registrations]
       description: |
-        Ordered `surname ASC, name ASC`. **Dropped registrations are always
-        excluded** — `dropped = 0` is hardcoded with no way to include them (B4).
-        Joins participant and competition, so the response carries read-only
-        fields absent from the single-item form (see `getRegistration`).
+        Ordered `surname ASC, name ASC`. Dropped registrations are excluded by
+        default; use `?dropped=` to change that. Joins participant and
+        competition, so the response carries read-only fields absent from the
+        single-item form (see `getRegistration`).
       parameters:
         - { name: year, in: query, schema: { type: integer } }
         - { name: comp, in: query, schema: { type: string } }
         - { name: participant, in: query, schema: { type: integer } }
+        - name: dropped
+          in: query
+          schema: { type: string, enum: ['0', '1', all], default: '0' }
+          description: |
+            `0` (default) live registrations only, `1` only withdrawn ones,
+            `all` both. Omitting it preserves the historical behaviour.
       responses:
         '200':
           description: OK
@@ -557,6 +578,23 @@ paths:
         '200':
           description: Updated
           content: { application/json: { schema: { $ref: '#/components/schemas/Registration' } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+    delete:
+      operationId: deleteRegistration
+      summary: Delete a registration
+      tags: [registrations]
+      description: |
+        Hard delete — the row is removed, unlike `PATCH /{id}/drop` which only
+        marks it withdrawn. Nothing references `registration(id)`, so this always
+        succeeds for an existing row.
+
+        Use this to genuinely retire data. A competition that ever had a
+        registration cannot be deleted while the row exists (see
+        `deleteCompetition`), so dropping alone leaves it permanently undeletable.
+      responses:
+        '204': { description: Deleted }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '404': { $ref: '#/components/responses/NotFound' }
 

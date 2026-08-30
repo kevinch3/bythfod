@@ -88,15 +88,18 @@ export class ApiClient {
   deleteParticipant(id) { return this._req('DELETE', `/participants/${id}`); }
 
   // Registrations
-  getRegistrations({ year, comp } = {}) {
+  getRegistrations({ year, comp, dropped } = {}) {
     const q = new URLSearchParams();
     if (year) q.set('year', year);
     if (comp) q.set('comp', comp);
+    // '0' (default) live only, '1' withdrawn only, 'all' both.
+    if (dropped !== undefined) q.set('dropped', dropped);
     const qs = q.toString();
     return this._req('GET', `/registrations${qs ? `?${qs}` : ''}`);
   }
   createRegistration(data) { return this._req('POST', '/registrations', data); }
   dropRegistration(id) { return this._req('PATCH', `/registrations/${id}/drop`); }
+  deleteRegistration(id) { return this._req('DELETE', `/registrations/${id}`); }
 
   // Works
   getWorks(comp) { return this._req('GET', `/works${comp ? `?comp=${encodeURIComponent(comp)}` : ''}`); }

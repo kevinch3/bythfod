@@ -353,3 +353,49 @@ scenario('12b', 'a DROPPED registration is hidden from the list but still fetcha
   assert.equal(one.body.dropped, 1);
   ctx.note('12b', 'CONFIRMED inconsistency: the list hides dropped rows, GET by id does not (B4).');
 });
+
+// ── B9 / B4 — the endpoints that make a reset possible ─────────────────────
+scenario('B9', 'a hard DELETE removes a registration and unblocks its competition', async (ctx) => {
+  const comp = await makeCompetition(ctx, 130);
+  const p = await makeParticipant(ctx, 130);
+  const reg = await ctx.api.post('/registrations', {
+    participant_id: p.id, competition_id: comp, year: SANDBOX.YEAR,
+  });
+  assert.equal(reg.status, 201);
+
+  // While it exists — dropped or not — the competition cannot be removed.
+  await ctx.api.patch(`/registrations/${reg.body.id}/drop`);
+  const blocked = await ctx.api.del(`/competitions/${comp}`);
+  assert.equal(blocked.status, 409, 'a dropped registration no longer blocks deletion');
+
+  const gone = await ctx.api.del(`/registrations/${reg.body.id}`);
+  assert.equal(gone.status, 204, 'hard delete did not return 204');
+  assert.equal((await ctx.api.get(`/registrations/${reg.body.id}`)).status, 404, 'the row survived');
+
+  const now = await ctx.api.del(`/competitions/${comp}`);
+  assert.equal(now.status, 204, 'the competition is still undeletable after its registration was removed');
+  ctx.track.competitions = ctx.track.competitions.filter(c => c !== comp);
+  ctx.note('B9', 'hard DELETE closes the loop: drop leaves the row and blocks forever, ' +
+    'delete removes it and the competition becomes deletable.');
+});
+
+scenario('B4', '?dropped= selects live, withdrawn, or both', async (ctx) => {
+  const comp = await makeCompetition(ctx, 131);
+  const live = await makeParticipant(ctx, 1311);
+  const gone = await makeParticipant(ctx, 1312);
+  const rLive = await ctx.api.post('/registrations', {
+    participant_id: live.id, competition_id: comp, year: SANDBOX.YEAR,
+  });
+  const rGone = await ctx.api.post('/registrations', {
+    participant_id: gone.id, competition_id: comp, year: SANDBOX.YEAR,
+  });
+  ctx.track.registrations.push(rLive.body.id, rGone.body.id);
+  await ctx.api.patch(`/registrations/${rGone.body.id}/drop`);
+
+  const ids = async (q) => (await ctx.api.get(`/registrations?comp=${comp}${q}`)).body.map(r => r.id);
+  assert.deepEqual(await ids(''), [rLive.body.id], 'the default stopped hiding dropped rows');
+  assert.deepEqual(await ids('&dropped=0'), [rLive.body.id]);
+  assert.deepEqual(await ids('&dropped=1'), [rGone.body.id]);
+  assert.equal((await ids('&dropped=all')).length, 2);
+  ctx.expectValid('listRegistrations', 200, (await ctx.api.get(`/registrations?comp=${comp}&dropped=all`)).body);
+});
