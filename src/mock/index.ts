@@ -13,6 +13,7 @@ import { openDb, schemaChecksum } from './db.ts';
 import { ROUTES, mapError, type Req, type Res } from './routes.ts';
 import { sign, verify } from './auth.ts';
 import { seedBasic, seedDemo, type SeedName } from './seed.ts';
+import { validateVocab } from './validate.ts';
 
 export interface MockOptions {
   /** 0 picks a free port — what tests want. */
@@ -100,6 +101,19 @@ export async function createMockServer(opts: MockOptions = {}): Promise<MockServ
         const result = verify(header.slice(7), jwtSecret);
         if (!result.ok) return send(401, { error: 'Token inválido o expirado' });
         auth = { userId: result.payload.userId, username: result.payload.username };
+      }
+
+      // Boundary validation, as upstream does with zod: a bad enum is a 400
+      // naming the field, not a constraint failure from the database.
+      if (body && (method === 'POST' || method === 'PUT')) {
+        const issues = validateVocab(body);
+        if (issues) {
+          return send(400, {
+            error: `Datos inválidos: ${issues.map(i => i.field).join(', ')}`,
+            code: 'VALIDATION_FAILED',
+            fields: issues,
+          });
+        }
       }
 
       const req: Req = { method, path, query: url.searchParams, body, auth };
