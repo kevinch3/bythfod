@@ -1,16 +1,16 @@
 {
   "repo": "eistedglobal-revamp",
   "source": "/home/kevinch3/Documentos/Dev/web/revamps/eistedglobal-revamp",
-  "syncedAt": "2026-08-30T12:52:56.935Z",
+  "syncedAt": "2026-08-30T13:09:15.090Z",
   "files": {
     "openapi.yaml": {
       "from": "api/openapi.yaml",
-      "sha256": "97dbf1749d2be824b43fa9c28bccb34cba38e2b6a3f6a1f617ce681848580a5f"
+      "sha256": "df74ebd5d1c5c1ba38aa1f45eda73f0e52c7db631e39263c5299dccbe04b4815"
     },
     "schema.sql": {
       "from": "api/src/config/schema.sql",
       "sha256": "f7ad65c9a8d07b4158823da88715546eb6a9d30278d51ec02587a1c7fa11565e"
     }
   },
-  "commit": "8f4aa8238b3dcb1e307dad39e1c9b52d3dcaf658"
+  "commit": "c23b4d9019581e014783ef1d4e89426e976b263b"
 }

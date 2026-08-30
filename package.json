@@ -3,10 +3,16 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test",
+    "test": "node --test test/*.test.js",
     "serve": "npx http-server -p 8123 -c-1",
     "contract:sync": "node tools/sync-contract.mjs",
     "contract:check": "node tools/sync-contract.mjs --check",
-    "build:pages": "node tools/build-static.mjs && node tools/assert-public-build.mjs"
+    "build:pages": "node tools/build-static.mjs && node tools/assert-public-build.mjs",
+    "contract:live": "node tools/contract-live.mjs"
+  },
+  "devDependencies": {
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1",
+    "js-yaml": "^5.4.1"
   }
 }

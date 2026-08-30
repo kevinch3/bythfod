@@ -729,7 +729,17 @@ components:
     Placement:
       type: [string, 'null']
       enum: ['1', '2', '3', mencion, null]
-      description: Null means no placement awarded (or not yet adjudicated).
+      description: |
+        Null means no placement awarded (or not yet adjudicated).
+
+        **QUIRK (B10) — this vocabulary is NOT currently enforced.** The column's
+        constraint is `CHECK(placement IN ('1','2','3','mencion',NULL))`, and for
+        any non-matching value that expression evaluates to NULL rather than
+        false. A CHECK only rejects on false, so the constraint never fires and
+        the API stores any string. Removing `NULL` from the list restores
+        enforcement (the column is nullable regardless, so it was never needed).
+        Verified by contract scenario 7. Clients must not assume the value they
+        read back is one of these.
 
     Language:
       type: [string, 'null']
