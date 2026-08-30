@@ -7,9 +7,9 @@
 // says which assertion caught it.
 //
 // Quirks are reproduced faithfully — GET /registrations hides dropped rows by
-// default, DELETE /participants is soft unless ?hard=1, PATCH /drop returns 200
-// with a message where its siblings return 204. A mock that quietly behaved
-// better than the API would hide exactly the bugs worth finding.
+// default and DELETE /participants is soft unless ?hard=1. A mock that quietly
+// behaved better than the API would hide exactly the bugs worth finding.
+
 import type { DatabaseSync } from 'node:sqlite';
 import { mapError } from './errors.ts';
 
@@ -180,7 +180,8 @@ export const ROUTES: [string, string, Handler][] = [
     if (type) { where.push('type = ?'); args.push(type); }
     // Substring LIKE across three columns — the semantics sandbox.ts defends against.
     if (q) { where.push('(name LIKE ? OR surname LIKE ? OR document_id LIKE ?)'); args.push(`%${q}%`, `%${q}%`, `%${q}%`); }
-    // No active filter: soft-deleted participants are still returned (B3).
+    // Active only unless asked otherwise, since B3.
+    if (req.query.get('includeInactive') !== '1') where.push('active = 1');
     return json(200, all(db,
       `SELECT * FROM participant ${where.length ? `WHERE ${where.join(' AND ')}` : ''}
        ORDER BY surname ASC, name ASC`, ...args));
@@ -267,8 +268,8 @@ export const ROUTES: [string, string, Handler][] = [
   }],
   ['PATCH', '/registrations/:id/drop', (db, _req, [id]) => {
     const r = db.prepare('UPDATE registration SET dropped = 1 WHERE id = ?').run(id as string);
-    // 200 with a message, where its siblings return 204 (quirk B6).
-    return r.changes === 0 ? notFound('Registration') : json(200, { message: 'Registration dropped' });
+    // 204, like every other mutation, since B6.
+    return r.changes === 0 ? notFound('Registration') : json(204);
   }],
   ['DELETE', '/registrations/:id', (db, _req, [id]) => {
     const r = db.prepare('DELETE FROM registration WHERE id = ?').run(id as string);

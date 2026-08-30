@@ -119,7 +119,7 @@ scenario('3b', 'a competition whose registrations are all DROPPED still cannot b
   });
   ctx.track.registrations.push(reg.body.id);
   const dropped = await ctx.api.patch(`/registrations/${reg.body.id}/drop`);
-  assert.equal(dropped.status, 200);
+  assert.equal(dropped.status, 204);
 
   const del = await ctx.api.del(`/competitions/${comp}`);
   assert.notEqual(del.status, 204,
@@ -169,7 +169,7 @@ scenario('4a', '?q= is a substring LIKE across name, surname AND document_id', a
     'document_id, which is what makes its delete safe.');
 });
 
-scenario('4b', 'soft-deleted participants are STILL returned by list and search (B3)', async (ctx) => {
+scenario('4b', 'soft-deleted participants are hidden by default, visible with includeInactive (B3)', async (ctx) => {
   const marker = `ZZI${Date.now()}`;
   const p = await ctx.api.post('/participants', {
     name: `${marker}inactive`, type: 'IND', document_id: `${marker}-doc`,
@@ -177,11 +177,15 @@ scenario('4b', 'soft-deleted participants are STILL returned by list and search 
   ctx.track.participants.push(p.body.id);
   assert.equal((await ctx.api.del(`/participants/${p.body.id}`)).status, 204);
 
-  const after = await ctx.api.get(`/participants?q=${marker}`);
-  const row = after.body.find(x => x.id === p.body.id);
-  assert.ok(row, 'a soft-deleted participant vanished from search — B3 is already fixed');
+  // B3: the default listing now hides them, and includeInactive brings them back.
+  const hidden = await ctx.api.get(`/participants?q=${marker}`);
+  assert.ok(!hidden.body.some(x => x.id === p.body.id),
+    'a soft-deleted participant is still returned by default — B3 has regressed');
+  const shown = await ctx.api.get(`/participants?q=${marker}&includeInactive=1`);
+  const row = shown.body.find(x => x.id === p.body.id);
+  assert.ok(row, 'includeInactive=1 did not return the soft-deleted participant');
   assert.equal(row.active, 0);
-  ctx.expectValid('listParticipants', 200, after.body);
+  ctx.expectValid('listParticipants', 200, shown.body);
 
   // The second delete still reports success, which is why the reset loop never
   // notices it is re-deleting corpses.
@@ -231,7 +235,7 @@ scenario('6', 'competition id is caller-supplied; a duplicate returns 409', asyn
 });
 
 // ── #5 — the PATCH-with-no-body question ───────────────────────────────────
-scenario('5', 'PATCH /drop works with NO body and a JSON content-type', async (ctx) => {
+scenario('5', 'PATCH /drop works with NO body and returns 204 (B6)', async (ctx) => {
   const comp = await makeCompetition(ctx, 50);
   const p = await makeParticipant(ctx, 50);
   const reg = await ctx.api.post('/registrations', {
@@ -243,10 +247,10 @@ scenario('5', 'PATCH /drop works with NO body and a JSON content-type', async (c
   const res = await ctx.api.patch(`/registrations/${reg.body.id}/drop`, undefined, {
     headers: { 'Content-Type': 'application/json' },
   });
-  assert.equal(res.status, 200, `bodyless PATCH with JSON content-type failed: ${res.status}`);
-  ctx.expectValid('dropRegistration', 200, res.body);
-  ctx.note('5', 'CONFIRMED: express.json() tolerates a zero-length body with ' +
-    'Content-Type: application/json — client.js is safe as written.');
+  assert.equal(res.status, 204, `bodyless PATCH with JSON content-type failed: ${res.status}`);
+  assert.equal(res.raw, '', 'drop returned a body — B6 made it 204');
+  ctx.note('5', 'express.json() tolerates a zero-length body with a JSON ' +
+    'content-type, and drop now returns 204 like its siblings (B6).');
 });
 
 // ── #7, #8 — vocabulary locks ──────────────────────────────────────────────
