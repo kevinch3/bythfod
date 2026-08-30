@@ -1,6 +1,6 @@
 // DayPlan → flat Segment[] the engine steps through. Pure module.
 // Segment: { kind, itemOrdinal, sessionId, entrantIdx?, dur, stage, music?, banner? }
-import { makeRng } from './rng.js';
+import { makeRng } from './rng.ts';
 import { MUSIC_BY_KIND } from '../render/music.js';
 
 // Act types the vendored StageRend knows how to build ('empty'/'award' added in M3).

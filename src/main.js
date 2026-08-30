@@ -5,7 +5,7 @@ import { CONFIG } from './config.js';
 import { PROGRAM } from './core/program.js';
 import { generateDayPlan } from './core/roster.js';
 import { buildTimeline } from './core/timeline.js';
-import { makeRng } from './core/rng.js';
+import { makeRng } from './core/rng.ts';
 import * as E from './core/engine.js';
 import { TemplateFeedbackGenerator, generateWithTimeout } from './core/feedback.js';
 import { Synth } from './render/synth.js';

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { makeRng } from '../src/core/rng.js';
+import { makeRng } from '../src/core/rng.ts';
 import {
   FeedbackGenerator, TemplateFeedbackGenerator, pickFragment, generateWithTimeout,
 } from '../src/core/feedback.js';

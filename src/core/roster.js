@@ -5,7 +5,7 @@
 // (order / names / cast / placements), and item-level streams are keyed by the
 // item's printed ordinal — so a different running order, or re-drawing one
 // item's winners, never changes anyone's name or a neighbouring item's cast.
-import { makeRng } from './rng.js';
+import { makeRng } from './rng.ts';
 import { makeNameGen } from './names.js';
 
 const GROUP_SIZES = {
