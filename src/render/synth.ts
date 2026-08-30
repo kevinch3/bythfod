@@ -2,25 +2,38 @@
 // ─────────────────────────────────────────────
 //  UTILITIES
 // ─────────────────────────────────────────────
-export function hz(name) {
+/** One step of a track: note name (or 'R' for a rest) and duration in beats. */
+export type Note = [string, number];
+
+export function hz(name: string): number {
   if (!name || name === 'R') return 0;
   const m = {C:0,'C#':1,D:2,'D#':3,E:4,F:5,'F#':6,G:7,'G#':8,A:9,'A#':10,B:11};
   const mt = name.match(/^([A-G]#?)(\d)$/);
   if (!mt) return 0;
-  return 440 * Math.pow(2, (m[mt[1]] + (parseInt(mt[2]) - 4) * 12 - 9) / 12);
+  return 440 * Math.pow(2, (m[mt[1] as keyof typeof m] + (parseInt(mt[2] as string) - 4) * 12 - 9) / 12);
 }
 
 // ─────────────────────────────────────────────
 //  NES AUDIO ENGINE
 // ─────────────────────────────────────────────
 export class Synth {
+  /** Created on boot(), which must follow a user gesture. */
+  ac: AudioContext | null;
+  out: GainNode | null;
+  /** Currently sounding nodes, so silence() can stop them all. A mix of
+   *  oscillators and gains, so `stop` is optional. */
+  nodes: (AudioNode & { stop?: (when?: number) => void })[];
+  vol: number;
+  ready: boolean;
+
   constructor() {
     this.ac = null; this.out = null;
     this.nodes = []; this.vol = 0.22; this.ready = false;
   }
   boot() {
     if (this.ready) return;
-    this.ac = new (window.AudioContext || window.webkitAudioContext)();
+    this.ac = new (window.AudioContext
+      || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
     this.out = this.ac.createGain(); this.out.gain.value = this.vol;
     this.out.connect(this.ac.destination); this.ready = true;
   }
@@ -28,21 +41,26 @@ export class Synth {
     this.nodes.forEach(n => { try { n.stop?.(); n.disconnect?.(); } catch(e){} });
     this.nodes = [];
   }
-  pulseWave(duty) {
+  pulseWave(duty: number): PeriodicWave {
     const R = new Float32Array(64), I = new Float32Array(64);
     for (let n=1;n<64;n++) I[n] = 2/(n*Math.PI) * Math.sin(n*Math.PI*duty);
-    return this.ac.createPeriodicWave(R, I, {disableNormalization:true});
+    return this.ac!.createPeriodicWave(R, I, {disableNormalization:true});
   }
-  track(seq, bpm, type='square', vol=0.1, duty=0.5, delay=0) {
+  /** Schedules a sequence; returns how long it will sound, in seconds. */
+  track(seq: Note[], bpm: number, type: OscillatorType | 'pulse' = 'square',
+        vol = 0.1, duty = 0.5, delay = 0): number {
     if (!this.ready) return 0;
-    const o = this.ac.createOscillator();
+    // ready implies boot() ran, so both are set.
+    const ac = this.ac as AudioContext;
+    const out = this.out as GainNode;
+    const o = ac.createOscillator();
     if (type==='pulse') o.setPeriodicWave(this.pulseWave(duty));
-    else o.type = type;
-    const g = this.ac.createGain(); g.gain.value = 0;
-    o.connect(g); g.connect(this.out); o.start();
+    else o.type = type as OscillatorType;
+    const g = ac.createGain(); g.gain.value = 0;
+    o.connect(g); g.connect(out); o.start();
     this.nodes.push(o, g);
     const spb = 60/bpm;
-    let t = this.ac.currentTime + delay + 0.05;
+    let t = ac.currentTime + delay + 0.05;
     for (const [note, dur] of seq) {
       const f = hz(note), d = dur*spb;
       if (f) {
@@ -54,12 +72,14 @@ export class Synth {
       t += d;
     }
     o.stop(t + 0.1);
-    return t - this.ac.currentTime;
+    return t - ac.currentTime;
   }
-  noise(dur, vol=0.13) {
+  noise(dur: number, vol = 0.13): void {
     if (!this.ready) return;
-    const sr = this.ac.sampleRate;
-    const buf = this.ac.createBuffer(1, Math.ceil(sr*dur), sr);
+    const ac = this.ac as AudioContext;
+    const out = this.out as GainNode;
+    const sr = ac.sampleRate;
+    const buf = ac.createBuffer(1, Math.ceil(sr*dur), sr);
     const d = buf.getChannelData(0);
     for (let i=0;i<d.length;i++) {
       const t = i/sr;
@@ -67,13 +87,16 @@ export class Synth {
       const pulse = Math.sin(t*16)>0.15 ? 1 : 0.22;
       d[i] = (Math.random()*2-1)*env*pulse;
     }
-    const src = this.ac.createBufferSource(); src.buffer = buf;
-    const flt = this.ac.createBiquadFilter();
+    const src = ac.createBufferSource(); src.buffer = buf;
+    const flt = ac.createBiquadFilter();
     flt.type='bandpass'; flt.frequency.value=1200; flt.Q.value=0.7;
-    const g = this.ac.createGain(); g.gain.value = vol;
-    src.connect(flt); flt.connect(g); g.connect(this.out);
-    src.start(); src.stop(this.ac.currentTime+dur);
+    const g = ac.createGain(); g.gain.value = vol;
+    src.connect(flt); flt.connect(g); g.connect(out);
+    src.start(); src.stop(ac.currentTime+dur);
     this.nodes.push(src, flt, g);
   }
-  setVol(v) { this.vol=v; if(this.out) this.out.gain.linearRampToValueAtTime(v, this.ac.currentTime+0.05); }
+  setVol(v: number): void {
+    this.vol = v;
+    if (this.out && this.ac) this.out.gain.linearRampToValueAtTime(v, this.ac.currentTime + 0.05);
+  }
 }

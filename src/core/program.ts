@@ -4,12 +4,14 @@
 // autores y lugares son todos inventados. Data pura, sin lógica.
 // kind → casting/música/escena; language → competition.language de eistedglobal
 // ('cy' → Cymraeg, 'es' → Castellano).
-export const KINDS = [
+import type { Kind, Program } from './types.ts';
+
+export const KINDS: readonly Kind[] = [
   'solo', 'recitacion', 'cydadrodd', 'coro', 'conjunto', 'parti',
   'deuawd', 'dawns', 'instrumental', 'ceremony',
 ];
 
-export const PROGRAM = {
+export const PROGRAM: Program = {
   festival: 'Eisteddfod Bythfod',
   edition: 'Eisteddfod Bythfod — Porth Awel (edición ficticia)',
   venue: 'Neuadd y Dyffryn, Porth Awel',

@@ -1,19 +1,30 @@
+import type { ItemPlan, Rng } from './types.ts';
 // Jury feedback generation. Pure module.
 // The async interface is the LLM seam: a future LLMFeedbackGenerator drops in
 // here, and generateWithTimeout guarantees a stalled generator can never stall
 // the show (the engine gets a canned line instead).
-import { TodoError } from './roster.js';
+import { TodoError } from './roster.ts';
 
-export class FeedbackGenerator {
-  /**
-   * @param ctx {{ item: ItemPlan, rng: Rng }}
-   * @returns {Promise<string[]>} lines of jury speech, spoken in order
-   */
-  async generate(ctx) { throw new Error('FeedbackGenerator.generate is abstract'); }
+/** What a jury needs in order to say something about an item. */
+export interface FeedbackContext {
+  item: ItemPlan;
+  rng: Rng;
 }
 
-export async function generateWithTimeout(generator, ctx, ms, fallbackLine) {
-  const timeout = new Promise(resolve => setTimeout(() => resolve(null), ms));
+export class FeedbackGenerator {
+  /** Lines of jury speech, spoken in order. */
+  async generate(_ctx: FeedbackContext): Promise<string[]> {
+    throw new Error('FeedbackGenerator.generate is abstract');
+  }
+}
+
+export async function generateWithTimeout(
+  generator: FeedbackGenerator,
+  ctx: FeedbackContext,
+  ms: number,
+  fallbackLine: string,
+): Promise<string[]> {
+  const timeout = new Promise<null>(resolve => setTimeout(() => resolve(null), ms));
   const lines = await Promise.race([generator.generate(ctx).catch(() => null), timeout]);
   return Array.isArray(lines) && lines.length ? lines : [fallbackLine];
 }
@@ -31,12 +42,12 @@ export async function generateWithTimeout(generator, ctx, ms, fallbackLine) {
  * keeps variety in tiny banks). The tests only require: never pick a recent
  * fragment while a fresh one exists, and never fail on a saturated bank.
  */
-export function pickFragment(bank, recent, rng) {
-  throw new TodoError('pickFragment: TODO(you) — see the docblock in js/core/feedback.js');
+export function pickFragment(bank: string[], recent: string[], rng: Rng): string {
+  throw new TodoError('pickFragment: TODO(you) — see the docblock in js/core/feedback.ts');
 }
 
 // Provisional fallback until pickFragment is implemented: plain pick.
-function pickFrag(bank, recent, rng) {
+function pickFrag(bank: string[], recent: string[], rng: Rng): string {
   try { return pickFragment(bank, recent, rng); }
   catch (e) { if (e instanceof TodoError) return rng.pick(bank); throw e; }
 }
@@ -127,20 +138,23 @@ const ENTRANT_TEMPLATES = [
 ];
 
 export class TemplateFeedbackGenerator extends FeedbackGenerator {
+  /** The last few fragments used, so pickFragment can avoid repeating them. */
+  recent: string[];
+
   constructor() {
     super();
     this.recent = [];
   }
 
-  _remember(fragment) {
+  _remember(fragment: string): void {
     this.recent.push(fragment);
     if (this.recent.length > 8) this.recent.shift();
   }
 
-  async generate({ item, rng }) {
+  override async generate({ item, rng }: FeedbackContext): Promise<string[]> {
     const kind = item.program.kind;
-    const tech = TECH[kind] || TECH.solo;
-    const lines = [];
+    const tech = TECH[kind as keyof typeof TECH] ?? TECH.solo;
+    const lines: string[] = [];
 
     const opening = pickFrag(APERTURA, this.recent, rng);
     this._remember(opening);

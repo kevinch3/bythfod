@@ -1,0 +1,36 @@
+{
+  // Type checking for SHIPPED code (src/). Strict, no exceptions — this is the
+  // code that runs in a browser and talks to the API.
+  //
+  // Tests and tools are checked by tsconfig.test.json, which relaxes
+  // noImplicitAny only; `npm run typecheck` runs both. Browser emit is
+  // tsconfig.build.json. Tests run off the sources under Node's type stripper,
+  // so `npm test` never invokes tsc at all.
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+
+    "noEmit": true,
+
+    "strict": true,
+    "noUncheckedIndexedAccess": false,
+    "noImplicitOverride": true,
+    "forceConsistentCasingInFileNames": true,
+
+    // Node's stripper erases types, it does not transform code. This makes tsc
+    // reject anything the stripper cannot run (enum, namespace, parameter
+    // properties), so tests and the browser build can never diverge.
+    "erasableSyntaxOnly": true,
+    "verbatimModuleSyntax": true,
+    "isolatedModules": true,
+
+    // Source imports carry the real .ts extension; emit rewrites them to .js.
+    "allowImportingTsExtensions": true,
+    "rewriteRelativeImportExtensions": true,
+
+    "skipLibCheck": true
+  },
+  "include": ["src/**/*"]
+}

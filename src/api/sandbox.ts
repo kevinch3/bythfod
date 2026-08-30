@@ -3,7 +3,11 @@
 // POSTs — no unique constraint), the edition row is reused (409 = fine),
 // and reset REUSES competitions (a competition that ever had a registration
 // can never be hard-deleted: FKs are on and registrations only soft-drop).
-import { ApiClient, ApiError } from './client.js';
+import { ApiClient, ApiError } from './client.ts';
+import type { DayPlan, ItemPlan, LanguageCode, PlacementDraw } from '../core/types.ts';
+import type { components } from '../contract/api.generated.ts';
+
+type ApiLanguage = NonNullable<components['schemas']['Language']>;
 
 export const CATEGORY_BY_KIND = {
   solo: 'Canto Individual',
@@ -19,13 +23,34 @@ const WELSH_NAMES = {
   Danza: 'Dawns', Instrumental: 'Offerynnol', 'Composición': 'Cyfansoddi',
 };
 
-const LANGUAGE = { es: 'Castellano', cy: 'Cymraeg' };
+// Typed against the contract, so an unmapped value cannot silently become a
+// string the API's CHECK constraint rejects.
+const LANGUAGE: Record<LanguageCode, ApiLanguage> = { es: 'Castellano', cy: 'Cymraeg' };
 
 const PSEUDONYMS = ['Awen', 'Morfa', 'Alarch', 'Seren y De', 'Gwlithyn', 'Hedydd', 'Craig yr Aur'];
 
-const flat = plan => plan.sessions.flatMap(s => s.items);
+const flat = (plan: DayPlan): ItemPlan[] => plan.sessions.flatMap(s => s.items);
 
-export async function prepareSandbox({ plan, config, username, password, log = () => {}, client }) {
+/** What prepareSandbox hands back: the client plus the verbs main.ts needs. */
+export interface Sandbox {
+  client: ApiClient;
+  award(item: ItemPlan): Promise<unknown[]>;
+  redraw(item: ItemPlan): Promise<unknown[]>;
+  participantIds: Map<string, number>;
+  year: number;
+  prefix: string;
+}
+
+export async function prepareSandbox({
+  plan, config, username, password, log = () => {}, client,
+}: {
+  plan: DayPlan;
+  config: { API_BASE: string; SIM_YEAR: number; COMP_PREFIX: string };
+  username?: string;
+  password?: string;
+  log?: (msg: string) => void;
+  client?: ApiClient;
+}): Promise<Sandbox> {
   if (!client && (!username || !password)) {
     throw new Error('faltan credenciales del API (las crea `npm run seed` en eistedglobal)');
   }
@@ -34,7 +59,8 @@ export async function prepareSandbox({ plan, config, username, password, log = (
   const prefix = `${config.COMP_PREFIX}${year}`;
   const SIM_PREFIX = 'SIM-'; // marks participants this sim created (document_id)
 
-  await api.login(username, password);
+  // The guard above proves both are set; the compiler cannot see through it.
+  await api.login(username as string, password as string);
   log('✔ login ok');
 
   // 1. Categories by name
@@ -42,7 +68,9 @@ export async function prepareSandbox({ plan, config, username, password, log = (
   const byName = new Map(existing.map(c => [c.name, c.id]));
   for (const name of new Set(Object.values(CATEGORY_BY_KIND))) {
     if (!byName.has(name)) {
-      const created = await api.createCategory({ name, name_welsh: WELSH_NAMES[name] ?? name });
+      const created = await api.createCategory({
+        name, name_welsh: WELSH_NAMES[name as keyof typeof WELSH_NAMES] ?? name,
+      });
       byName.set(name, created.id);
       log(`✔ categoría creada: ${name}`);
     }
@@ -100,8 +128,14 @@ export async function prepareSandbox({ plan, config, username, password, log = (
   const items = flat(plan);
   for (const item of items) {
     const p = item.program;
+    // Categories are ensured above, so the lookup cannot miss — but say so
+    // rather than sending undefined, which the contract forbids.
+    const categoryName = CATEGORY_BY_KIND[p.kind];
+    const categoryId = byName.get(categoryName);
+    if (categoryId === undefined) throw new Error(`categoría no encontrada: ${categoryName}`);
+
     const body = {
-      category_id: byName.get(CATEGORY_BY_KIND[p.kind]),
+      category_id: categoryId,
       description: `${p.kind === 'ceremony' ? '✦' : `Comp.${p.comp}`} — ${p.label}${p.piece ? ` · "${p.piece}"` : ''}`,
       language: LANGUAGE[p.language] ?? 'Otro',
       year,
@@ -149,10 +183,12 @@ export async function prepareSandbox({ plan, config, username, password, log = (
   if (stale.length) log(`✔ ${stale.length} competencias residuales neutralizadas (vacante, rank 9xx)`);
 
   /** Post only the placements the API does not already have for this item. */
-  async function awardMissing(item) {
+  async function awardMissing(item: ItemPlan): Promise<unknown[]> {
     const existing = await api.getWorks(item.compId);
     const already = new Set(existing.map(w => `${w.participant_id}:${w.placement}`));
-    const todo = item.placements.filter(
+    // Callers skip 'desierto' before reaching here; be explicit for the compiler.
+    const drawn: PlacementDraw[] = item.placements === 'desierto' ? [] : item.placements;
+    const todo = drawn.filter(
       pl => !already.has(`${participantIds.get(pl.entrantKey)}:${pl.placement}`),
     );
     return Promise.all(todo.map(pl => {
@@ -175,7 +211,7 @@ export async function prepareSandbox({ plan, config, username, password, log = (
    * writes only the gap — which makes a retry safe, and also makes re-awarding
    * the same item a no-op.
    */
-  async function award(item) {
+  async function award(item: ItemPlan): Promise<unknown[]> {
     if (item.placements === 'desierto') return [];
     try {
       return await awardMissing(item);
@@ -186,7 +222,7 @@ export async function prepareSandbox({ plan, config, username, password, log = (
     }
   }
 
-  async function redraw(item) {
+  async function redraw(item: ItemPlan): Promise<unknown[]> {
     const works = await api.getWorks(item.compId);
     for (const w of works) await api.deleteWork(w.id);
     return award(item);

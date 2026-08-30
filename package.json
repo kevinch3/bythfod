@@ -6,13 +6,19 @@
     "test": "node --test test/*.test.js",
     "serve": "npx http-server -p 8123 -c-1",
     "contract:sync": "node tools/sync-contract.mjs",
-    "contract:check": "node tools/sync-contract.mjs --check",
-    "build:pages": "node tools/build-static.mjs && node tools/assert-public-build.mjs",
-    "contract:live": "node tools/contract-live.mjs"
+    "contract:check": "node tools/sync-contract.mjs --check && node tools/gen-contract.mjs --check",
+    "build:pages": "npm run build && node tools/build-static.mjs && node tools/assert-public-build.mjs",
+    "contract:live": "node tools/contract-live.mjs",
+    "typecheck": "tsc --noEmit",
+    "build": "tsc -p tsconfig.build.json",
+    "contract:gen": "node tools/gen-contract.mjs"
   },
   "devDependencies": {
+    "@types/node": "^26.4.0",
     "ajv": "^8.20.0",
     "ajv-formats": "^3.0.1",
-    "js-yaml": "^5.4.1"
+    "js-yaml": "^5.4.1",
+    "openapi-typescript": "^7.13.0",
+    "typescript": "~5.9"
   }
 }

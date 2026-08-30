@@ -1,9 +1,11 @@
+import type { Note, Synth } from './synth.ts';
 // Vendored from bythfod app.js — the 13 chiptune pieces (M), ported to ES module.
-export const MUSIC = {
-  fanfare(s) {
+/** Each piece drives the synth; MUSIC_BY_KIND maps a programme kind to them. */
+export const MUSIC: Record<string, (s: Synth) => void> = {
+  fanfare(s: Synth): void {
     s.track([['C5',.35],['E5',.35],['G5',.35],['C6',.8],['R',.2],['B5',.3],['C6',1.1]], 200,'pulse',.14,.5);
   },
-  choir(s) {
+  choir(s: Synth): void {
     const bpm=78;
     s.track([
       ['G4',1],['A4',.5],['B4',.5],['G4',1],['G4',1],
@@ -32,7 +34,7 @@ export const MUSIC = {
       ['G2',4],['R',0],
     ], bpm,'triangle',.085);
   },
-  solo(s) {
+  solo(s: Synth): void {
     const bpm=70;
     s.track([
       ['E5',1.5],['D5',.5],['C5',1],['D5',1],
@@ -51,7 +53,7 @@ export const MUSIC = {
       ['G2',4],['C3',4],
     ], bpm,'triangle',.08);
   },
-  duo(s) {
+  duo(s: Synth): void {
     const bpm=96;
     s.track([
       ['G5',1],['E5',1],['F5',1],['D5',1],
@@ -80,9 +82,9 @@ export const MUSIC = {
       ['G2',4],['C3',4],
     ], bpm,'triangle',.08);
   },
-  violin(s) {
+  violin(s: Synth): void {
     const bpm=62;
-    const mel=[
+    const mel: Note[]=[
       ['A5',2],['G5',1],['F#5',1],
       ['E5',1.5],['D5',.5],['E5',2],
       ['F#5',1],['E5',1],['D5',1],['C#5',1],
@@ -101,7 +103,7 @@ export const MUSIC = {
       ['D3',4],['A2',4],
     ], bpm,'triangle',.085);
   },
-  trumpet(s) {
+  trumpet(s: Synth): void {
     const bpm=110;
     s.track([
       ['C5',.5],['E5',.5],['G5',.5],['C6',.5],
@@ -127,7 +129,7 @@ export const MUSIC = {
       ['C3',2.5],['R',.5],
     ], bpm,'triangle',.085);
   },
-  recitation(s) {
+  recitation(s: Synth): void {
     const bpm = 96;
     s.track([
       // phrase 1
@@ -147,9 +149,9 @@ export const MUSIC = {
       ['G4',.4],['R',.2],['G4',.4],['R',.25],['G4',1.1],['R',1.5],
     ], bpm,'triangle',.055);
   },
-  cydadrodd(s) {
+  cydadrodd(s: Synth): void {
     const bpm = 96;
-    const phrases = [
+    const phrases: Note[] = [
       ['G4',.4],['R',.25],['G4',.4],['R',.2],['A4',.6],['R',.55],
       ['G4',.4],['R',.2],['F4',.4],['R',.2],['G4',.7],['R',.85],
       ['A4',.4],['R',.25],['A4',.4],['R',.2],['B4',.6],['R',.5],
@@ -164,13 +166,13 @@ export const MUSIC = {
     // lead voice
     s.track(phrases, bpm,'triangle',.055);
     // second voice a fifth up, slightly delayed
-    const upper = phrases.map(([n,d]) => [n==='R'?'R':n.replace(/(\d)$/,v=>+v+1), d]);
+    const upper: Note[] = phrases.map(([n, d]) => [n === 'R' ? 'R' : n.replace(/(\d)$/, v => String(+v + 1)), d]);
     s.track(upper, bpm,'triangle',.032, 0.5, 0.07);
     // third voice — low octave, more delayed
-    const lower = phrases.map(([n,d]) => [n==='R'?'R':n.replace(/(\d)$/,v=>+v-1), d]);
+    const lower: Note[] = phrases.map(([n, d]) => [n === 'R' ? 'R' : n.replace(/(\d)$/, v => String(+v - 1)), d]);
     s.track(lower, bpm,'triangle',.025, 0.5, 0.14);
   },
-  folk(s) {
+  folk(s: Synth): void {
     const bpm = 84;
     s.track([
       ['G4',1],['A4',1],['B4',1],
@@ -197,7 +199,7 @@ export const MUSIC = {
       ['G2',3],['C3',3],['G2',3],['G2',3],
     ], bpm,'triangle',.07);
   },
-  dance(s) {
+  dance(s: Synth): void {
     const bpm = 138;
     s.track([
       ['E5',.5],['D5',.5],['C5',.5],['D5',.5],
@@ -228,7 +230,7 @@ export const MUSIC = {
       ['C3',4],
     ], bpm,'triangle',.08);
   },
-  hymn(s) {
+  hymn(s: Synth): void {
     const bpm = 60;
     s.track([
       ['G4',2],['G4',1],['A4',2],['G4',1],
@@ -261,7 +263,7 @@ export const MUSIC = {
       ['C3',3],['G2',3],
     ], bpm,'triangle',.085);
   },
-  delynnewydd(s) {
+  delynnewydd(s: Synth): void {
     const bpm = 126;
     // Melody — violin: G major arpeggio figure (A), stepwise arch (B), forte drive (C)
     s.track([
@@ -312,7 +314,7 @@ export const MUSIC = {
       ['G2',2],['D3',2],
     ], bpm,'triangle',.085);
   },
-  ceremoni(s) {
+  ceremoni(s: Synth): void {
     const bpm = 108;
     // ─── Three fanfare calls (~7.1 s) ───────────────────────────────
     s.track([

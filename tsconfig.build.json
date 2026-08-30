@@ -1,0 +1,12 @@
+{
+  // Browser emit. src/ only: test/ and tools/ run under Node and are never
+  // shipped. Inherits the strictness and the erasable-syntax guard so what is
+  // emitted matches what the tests actually ran.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "rootDir": "src",
+    "outDir": "out"
+  },
+  "include": ["src/**/*"]
+}

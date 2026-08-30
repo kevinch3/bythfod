@@ -5,8 +5,11 @@
 // (order / names / cast / placements), and item-level streams are keyed by the
 // item's printed ordinal — so a different running order, or re-drawing one
 // item's winners, never changes anyone's name or a neighbouring item's cast.
-import { makeRng } from './rng.js';
-import { makeNameGen } from './names.js';
+import { makeRng } from './rng.ts';
+import type {
+  DayPlan, Entrant, ItemPlan, Placement, PlacementDraw, PlacementResult, Program, ProgramItem, Rng,
+} from './types.ts';
+import { makeNameGen } from './names.ts';
 
 const GROUP_SIZES = {
   coro: [6, 12], conjunto: [3, 6], parti: [4, 8], dawns: [2, 10],
@@ -35,8 +38,8 @@ export class TodoError extends Error {}
  * juries differ on this)? A flat rng.chance per extra award, or a decaying
  * probability? Your call — the tests only pin the outer contract.
  */
-export function drawPlacements(entrantKeys, rng) {
-  throw new TodoError('drawPlacements: TODO(you) — see the docblock in js/core/roster.js');
+export function drawPlacements(entrantKeys: string[], rng: Rng): PlacementResult {
+  throw new TodoError('drawPlacements: TODO(you) — see the docblock in js/core/roster.ts');
 }
 
 /**
@@ -51,24 +54,28 @@ export function drawPlacements(entrantKeys, rng) {
  * (no second pass, trickier bounds). Both can be unbiased — the classic bug
  * is using rng on a range that includes already-placed elements.
  */
-export function shuffleKeepingFixed(items, isFixed, rng) {
-  throw new TodoError('shuffleKeepingFixed: TODO(you) — see the docblock in js/core/roster.js');
+export function shuffleKeepingFixed<T>(items: T[], isFixed: (item: T) => boolean, rng: Rng): T[] {
+  throw new TodoError('shuffleKeepingFixed: TODO(you) — see the docblock in js/core/roster.ts');
 }
 
 // Provisional fallbacks so the whole sim stays runnable before the TODOs are
 // implemented: entry order wins, printed order stands. Replaced automatically
 // the moment the real functions stop throwing TodoError.
-function fallbackPlacements(entrantKeys) {
-  const P = ['1', '2', '3'];
-  return entrantKeys.slice(0, 3).map((key, i) => ({ entrantKey: key, placement: P[i] }));
+function fallbackPlacements(entrantKeys: string[]): PlacementDraw[] {
+  const P: Placement[] = ['1', '2', '3'];
+  return entrantKeys.slice(0, 3).map((key, i) => ({ entrantKey: key, placement: P[i] as Placement }));
 }
 
-function orTodoFallback(fn, fallback) {
+function orTodoFallback<T>(fn: () => T, fallback: () => T): T {
   try { return fn(); }
   catch (e) { if (e instanceof TodoError) return fallback(); throw e; }
 }
 
-export function generateDayPlan(program, seed, { compPrefix = 'BY', year = 2099 } = {}) {
+export function generateDayPlan(
+  program: Program,
+  seed: number,
+  { compPrefix = 'BY', year = 2099 }: { compPrefix?: string; year?: number } = {},
+): DayPlan {
   const root = makeRng(seed);
   const orderRng = root.split('order');
   const namesRng = root.split('names');
@@ -89,23 +96,24 @@ export function generateDayPlan(program, seed, { compPrefix = 'BY', year = 2099 
     };
   });
 
-  function buildItemPlan(item, ordinal, si, slot) {
+  function buildItemPlan(item: ProgramItem, ordinal: number, si: number, slot: number): ItemPlan {
     const cast = castRng.split(`item${ordinal}`);
     const gen = makeNameGen(namesRng.split(`item${ordinal}`));
     const count = item.kind === 'ceremony' ? 1 : cast.int(1, 5);
 
-    const entrants = Array.from({ length: count }, (_, i) => {
+    const entrants: Entrant[] = Array.from({ length: count }, (_, i): Entrant => {
       const key = `e${ordinal}-${i + 1}`;
       if (item.entrantType === 'IND') {
         const person = gen.person();
         return { key, displayName: `${person.name} ${person.surname}`, person };
       }
-      const [lo, hi] = GROUP_SIZES[item.kind] || [3, 6];
+      // Not every group kind declares a size range; 3-6 is the general default.
+      const [lo, hi] = GROUP_SIZES[item.kind as keyof typeof GROUP_SIZES] ?? [3, 6];
       return { key, displayName: gen.group(item.kind), members: cast.int(lo, hi) };
     });
 
-    const placements = item.kind === 'ceremony'
-      ? [{ entrantKey: entrants[0].key, placement: '1' }]
+    const placements: PlacementResult = item.kind === 'ceremony'
+      ? [{ entrantKey: entrants[0]!.key, placement: '1' }]
       : orTodoFallback(
           () => drawPlacements(entrants.map(e => e.key), placeRng.split(`item${ordinal}`)),
           () => fallbackPlacements(entrants.map(e => e.key)),
@@ -125,7 +133,7 @@ export function generateDayPlan(program, seed, { compPrefix = 'BY', year = 2099 
 }
 
 /** Re-roll one item's winners with a fresh stream (nonce bumps per redraw). */
-export function redrawPlacements(item, seed, nonce) {
+export function redrawPlacements(item: ItemPlan, seed: number, nonce: number): PlacementResult {
   if (item.program.kind === 'ceremony') return item.placements;
   const rng = makeRng(seed).split('placements').split(`item${item.ordinal}`).split(`redraw${nonce}`);
   return orTodoFallback(

@@ -4,8 +4,8 @@
 // The deployed build must not carry API code or credentials: the eistedglobal
 // API only allows one CORS origin, the sim is a WRITE client (it creates and
 // deletes competitions, participants and registrations), and index.html ships
-// admin defaults. So the API panel is stripped and js/api/ is left out.
-// Offline mode is fully self-contained: sandbox.js and poller.js are reached
+// admin defaults. So the API panel is stripped and the API layer is left out.
+// Offline mode is fully self-contained: connect.js and its imports are reached
 // only through dynamic import() from the connect handler, which is gone here.
 import { cp, mkdir, readFile, writeFile, rm } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
@@ -17,11 +17,14 @@ const dist = join(root, 'dist');
 await rm(dist, { recursive: true, force: true });
 await mkdir(dist, { recursive: true });
 
-// Copy everything the offline path needs — js/api is deliberately excluded.
+// Copy compiled output, not sources: index.html loads out/main.ts in dev and in
+// dist alike, so nothing here rewrites script paths. The API layer is excluded
+// wholesale; tools/assert-public-build.mjs verifies the result rather than
+// trusting this filter.
 await cp(join(root, 'css'), join(dist, 'css'), { recursive: true });
-await cp(join(root, 'js'), join(dist, 'js'), {
+await cp(join(root, 'out'), join(dist, 'out'), {
   recursive: true,
-  filter: src => !src.includes(`${'js'}/api`),
+  filter: p => !/[/\\](api|mock|contract)[/\\]?$|[/\\](api|mock|contract)[/\\]/.test(p),
 });
 
 let html = await readFile(join(root, 'index.html'), 'utf8');

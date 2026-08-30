@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { PROGRAM, KINDS } from '../js/core/program.js';
+import { PROGRAM, KINDS } from '../src/core/program.ts';
 
 const allItems = () => PROGRAM.sessions.flatMap(s => s.items);
 
