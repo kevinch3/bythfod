@@ -105,9 +105,10 @@ scenario('3a', 'a competition with a LIVE registration cannot be deleted', async
 
   const del = await ctx.api.del(`/competitions/${comp}`);
   assert.notEqual(del.status, 204, 'a competition WITH a registration was deleted');
-  ctx.note('3a', `FK violation status = ${del.status} ${JSON.stringify(del.body)} ` +
-    `(sandbox.js assumes this is why it never deletes; semantically it is 409)`);
+  assert.equal(del.status, 409, `expected a clean 409 after B1, got ${del.status}`);
+  assert.equal(del.body.code, 'CONFLICT_REFERENCE');
   ctx.expectValid('deleteCompetition', del.status, del.body);
+  ctx.note('3a', 'a registration blocks deletion, reported as 409 CONFLICT_REFERENCE (B1).');
 });
 
 scenario('3b', 'a competition whose registrations are all DROPPED still cannot be deleted', async (ctx) => {
@@ -209,7 +210,7 @@ scenario('2', 'POST /editions returns a clean 409 for an existing year', async (
   ctx.expectValid('createEdition', 409, res.body);
 });
 
-scenario('6', 'competition id is caller-supplied; a duplicate is NOT a clean 409', async (ctx) => {
+scenario('6', 'competition id is caller-supplied; a duplicate returns 409', async (ctx) => {
   const id = SANDBOX.compId(60);
   await ctx.api.del(`/competitions/${id}`);
   const first = await ctx.api.post('/competitions', {
@@ -223,9 +224,10 @@ scenario('6', 'competition id is caller-supplied; a duplicate is NOT a clean 409
     id, category_id: ctx.categoryId, year: SANDBOX.YEAR, type: 'IND', rank: 990,
   });
   assert.notEqual(dup.status, 201, 'a duplicate competition id was accepted');
-  ctx.note('6', `duplicate competition id → ${dup.status} ${JSON.stringify(dup.body)} ` +
-    `(editions give 409 for the same situation — B1)`);
+  assert.equal(dup.status, 409, `expected 409 after B1, got ${dup.status}`);
+  assert.equal(dup.body.code, 'CONFLICT_DUPLICATE');
   ctx.expectValid('createCompetition', dup.status, dup.body);
+  ctx.note('6', 'duplicate competition id now returns 409, matching the edition case (B1).');
 });
 
 // ── #5 — the PATCH-with-no-body question ───────────────────────────────────
@@ -269,8 +271,10 @@ scenario('7', 'placement accepts 1/2/3/mencion and rejects anything else (B10)',
     participant_id: p.id, competition_id: comp, title: 'bad', placement: 'primero',
   });
   assert.notEqual(bad.status, 201, 'an invalid placement was accepted — B10 has regressed');
-  ctx.note('7', `invalid placement rejected with ${bad.status} ${JSON.stringify(bad.body)} ` +
-    `(a database constraint, so still 5xx until B1 maps it to 400)`);
+  assert.equal(bad.status, 400, `expected 400 after B1, got ${bad.status}`);
+  assert.equal(bad.body.code, 'VALIDATION_VALUE');
+  ctx.expectValid('createWork', bad.status, bad.body);
+  ctx.note('7', 'invalid placement rejected as 400 VALIDATION_VALUE (B10 + B1).');
 });
 
 scenario('8', "type enum IND/GRU is shared by competitions and participants", async (ctx) => {

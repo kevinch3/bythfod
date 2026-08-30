@@ -161,20 +161,22 @@ paths:
           content: { application/json: { schema: { $ref: '#/components/schemas/Category' } } }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '404': { $ref: '#/components/responses/NotFound' }
-        '500': { $ref: '#/components/responses/ConstraintAs500' }
+        '400': { $ref: '#/components/responses/ValidationFailed' }
+        '409': { $ref: '#/components/responses/Conflict' }
     delete:
       operationId: deleteCategory
       summary: Delete a category
       tags: [categories]
       description: |
-        Hard delete. **QUIRK (B1)** — deleting a category referenced by a
-        competition violates a foreign key and returns **500** with the raw SQLite
-        message, not 409.
+        Hard delete. A category still referenced by a competition cannot be
+        removed: the foreign key rejects it and the response is **409**
+        (`code: CONFLICT_REFERENCE`). There is no cascade.
       responses:
         '204': { description: Deleted }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '404': { $ref: '#/components/responses/NotFound' }
-        '500': { $ref: '#/components/responses/ConstraintAs500' }
+        '400': { $ref: '#/components/responses/ValidationFailed' }
+        '409': { $ref: '#/components/responses/Conflict' }
 
   /editions:
     get:
@@ -269,8 +271,8 @@ paths:
       summary: Attach an upload to an edition
       tags: [editions]
       description: |
-        **QUIRK (B1)** — the edition is not checked to exist; a bad year violates a
-        foreign key and returns 500.
+        The edition is not checked in route code; a bad year is caught by the
+        foreign key and returns **409** (`code: CONFLICT_REFERENCE`).
       requestBody:
         required: true
         content:
@@ -289,7 +291,7 @@ paths:
           description: '`{ error: "filename is required" }`'
           content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
         '401': { $ref: '#/components/responses/Unauthorized' }
-        '500': { $ref: '#/components/responses/ConstraintAs500' }
+        '409': { $ref: '#/components/responses/Conflict' }
 
   /competitions:
     get:
@@ -317,10 +319,11 @@ paths:
       description: |
         `id` is supplied by the caller — it is a TEXT primary key, not generated.
 
-        **QUIRK (B1)** — a duplicate `id` violates the primary key and returns
-        **500** with the raw SQLite message, where the analogous edition case
-        returns a clean 409. **QUIRK (B2)** — `language` and `type` are validated
-        only by SQL CHECK, so an invalid value is a 500, not a 400.
+        A duplicate `id` returns **409** (`code: CONFLICT_DUPLICATE`), matching
+        the analogous edition case. **QUIRK (B2)** — `language` and `type` are
+        still validated only by the database, so an invalid value is a **400**
+        raised by the CHECK constraint rather than by route-level validation;
+        the message says a field is out of range but not which one.
 
         The response is the inserted row **without** the category JOIN, so
         `category_name` is absent here but present on GET.
@@ -335,7 +338,7 @@ paths:
           description: '`{ error: "id, category_id, year, and type are required" }`'
           content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
         '401': { $ref: '#/components/responses/Unauthorized' }
-        '500': { $ref: '#/components/responses/ConstraintAs500' }
+        '409': { $ref: '#/components/responses/Conflict' }
 
   /competitions/{id}:
     parameters:
@@ -367,21 +370,24 @@ paths:
           content: { application/json: { schema: { $ref: '#/components/schemas/CompetitionRow' } } }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '404': { $ref: '#/components/responses/NotFound' }
-        '500': { $ref: '#/components/responses/ConstraintAs500' }
+        '400': { $ref: '#/components/responses/ValidationFailed' }
+        '409': { $ref: '#/components/responses/Conflict' }
     delete:
       operationId: deleteCompetition
       summary: Delete a competition
       tags: [competitions]
       description: |
-        Hard delete, no cascade. **QUIRK (B1)** — a competition with registrations
-        or works violates a foreign key and returns **500**. Note that dropping a
-        registration is a soft delete, so the row still exists and still blocks
-        deletion.
+        Hard delete, no cascade. A competition with registrations or works
+        cannot be removed: the foreign key rejects it and the response is **409**
+        (`code: CONFLICT_REFERENCE`). Note that dropping a registration is a soft
+        delete, so the row still exists and still blocks deletion — verified by
+        contract scenario 3b.
       responses:
         '204': { description: Deleted }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '404': { $ref: '#/components/responses/NotFound' }
-        '500': { $ref: '#/components/responses/ConstraintAs500' }
+        '400': { $ref: '#/components/responses/ValidationFailed' }
+        '409': { $ref: '#/components/responses/Conflict' }
 
   /participants:
     get:
@@ -425,7 +431,7 @@ paths:
           description: '`{ error: "name and type are required" }`'
           content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
         '401': { $ref: '#/components/responses/Unauthorized' }
-        '500': { $ref: '#/components/responses/ConstraintAs500' }
+        '409': { $ref: '#/components/responses/Conflict' }
 
   /participants/{id}:
     parameters:
@@ -457,7 +463,8 @@ paths:
           content: { application/json: { schema: { $ref: '#/components/schemas/Participant' } } }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '404': { $ref: '#/components/responses/NotFound' }
-        '500': { $ref: '#/components/responses/ConstraintAs500' }
+        '400': { $ref: '#/components/responses/ValidationFailed' }
+        '409': { $ref: '#/components/responses/Conflict' }
     delete:
       operationId: deleteParticipant
       summary: Deactivate a participant
@@ -512,7 +519,7 @@ paths:
           description: '`{ error: "participant_id, competition_id, and year are required" }`'
           content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
         '401': { $ref: '#/components/responses/Unauthorized' }
-        '500': { $ref: '#/components/responses/ConstraintAs500' }
+        '409': { $ref: '#/components/responses/Conflict' }
 
   /registrations/{id}:
     parameters:
@@ -615,7 +622,7 @@ paths:
           description: '`{ error: "participant_id, competition_id, and title are required" }`'
           content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
         '401': { $ref: '#/components/responses/Unauthorized' }
-        '500': { $ref: '#/components/responses/ConstraintAs500' }
+        '409': { $ref: '#/components/responses/Conflict' }
 
   /works/{id}:
     parameters:
@@ -645,7 +652,8 @@ paths:
           content: { application/json: { schema: { $ref: '#/components/schemas/Work' } } }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '404': { $ref: '#/components/responses/NotFound' }
-        '500': { $ref: '#/components/responses/ConstraintAs500' }
+        '400': { $ref: '#/components/responses/ValidationFailed' }
+        '409': { $ref: '#/components/responses/Conflict' }
     delete:
       operationId: deleteWork
       summary: Delete a work
@@ -690,13 +698,19 @@ components:
     NotFound:
       description: '`{ error: "<Entity> not found" }`'
       content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
-    ConstraintAs500:
+    Conflict:
       description: |
-        **QUIRK (B1/B8)** — a database constraint violation (foreign key, unique,
-        NOT NULL, CHECK) is not mapped to a status code. It reaches the generic
-        error handler and is returned as **500 with the raw SQLite message**,
-        e.g. `{ error: "FOREIGN KEY constraint failed" }`. Semantically these are
-        409 or 400; treat any 500 here as a constraint failure, not an outage.
+        A database constraint rejected the operation: a duplicate identifier
+        (`code: CONFLICT_DUPLICATE`), or a reference that cannot be satisfied —
+        either pointing at something absent or deleting something still
+        referenced (`code: CONFLICT_REFERENCE`).
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    ValidationFailed:
+      description: |
+        A value the database refused: a missing required column
+        (`code: VALIDATION_REQUIRED`) or one outside an allowed set
+        (`code: VALIDATION_VALUE`). Note these are enforced at the database
+        layer, so route-level validation (B2) may still be absent.
       content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
 
   schemas:
@@ -704,7 +718,13 @@ components:
       type: object
       required: [error]
       properties:
-        error: { type: string }
+        error: { type: string, description: 'Human-readable; not stable across releases.' }
+        code:
+          type: string
+          description: |
+            Stable machine-readable identifier. Branch on this, never on `error`.
+            Values: CONFLICT_DUPLICATE, CONFLICT_REFERENCE, VALIDATION_REQUIRED,
+            VALIDATION_VALUE, BAD_REQUEST, INTERNAL.
 
     LoginResponse:
       type: object
