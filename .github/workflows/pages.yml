@@ -22,8 +22,17 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+          cache: npm
+      # devDependencies only (ajv, js-yaml for the contract harness) — nothing
+      # here is shipped; assert-public-build.mjs enforces that.
+      - run: npm ci
+      # `npm test`, not bare `node --test`: the latter treats every file under
+      # test/ as a test file and would sweep up the contract scenario modules,
+      # which are run by tools/contract-live.mjs against a real server instead.
       - name: Test
-        run: node --test
+        run: npm test
+      - name: Verify the vendored contract is in sync with its source
+        run: node tools/sync-contract.mjs --check || echo "::warning::vendored contract differs from upstream; run npm run contract:sync"
       - name: Build the offline static site
         run: node tools/build-static.mjs
       - name: Assert the public build ships no API code or credentials
