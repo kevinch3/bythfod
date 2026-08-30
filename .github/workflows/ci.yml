@@ -1,0 +1,45 @@
+name: CI
+
+# Runs on pull requests and on main. Deliberately separate from pages.yml:
+# that workflow's job is to publish, and it uses Pages-specific actions that
+# have no business running on a pull request. This one only verifies.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+
+      - name: Type check
+        run: npm run typecheck
+
+      # Runs the sources under Node's type stripper — never tsc. The ten
+      # learning stubs must report as TODO, not as compile errors.
+      - name: Test
+        run: npm test
+
+      - name: The ten learning stubs must still be unimplemented
+        run: |
+          todo=$(npm test 2>&1 | grep -oP '^# todo \K[0-9]+')
+          echo "reported todo: ${todo:-none}"
+          test "$todo" = "10" || {
+            echo "::error::expected 10 TODO tests, got ${todo:-none} — a learning stub was implemented or broken"
+            exit 1
+          }
+
+      - name: Build and assert the public build ships no API code
+        run: npm run build:pages
+
+      - name: Vendored contract is in sync and generated types are fresh
+        run: npm run contract:check
