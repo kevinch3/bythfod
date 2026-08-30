@@ -257,7 +257,7 @@ export function juryState(st: EngineState) {
 export function positionState(st: EngineState) {
   const s = seg(st);
   if (!s) return { itemOrdinal: null, nextItemOrdinal: null, segKind: null, sessionId: null, done: st.phase === 'done' };
-  let next = null;
+  let next: number | null = null;
   for (let i = st.cursor + 1; i < st.segments.length; i++) {
     if (st.segments[i].itemOrdinal !== s.itemOrdinal) { next = st.segments[i].itemOrdinal; break; }
   }

@@ -1,9 +1,11 @@
 {
-  // The TYPE-CHECKING config: covers src, test and tools, emits nothing.
-  // Browser emit is tsconfig.build.json, which compiles src/ alone — the two
-  // are split because a single rootDir cannot cover all three directories.
-  // Tests run straight off the sources under Node's type stripper, so
-  // `npm test` never invokes tsc at all.
+  // Type checking for SHIPPED code (src/). Strict, no exceptions — this is the
+  // code that runs in a browser and talks to the API.
+  //
+  // Tests and tools are checked by tsconfig.test.json, which relaxes
+  // noImplicitAny only; `npm run typecheck` runs both. Browser emit is
+  // tsconfig.build.json. Tests run off the sources under Node's type stripper,
+  // so `npm test` never invokes tsc at all.
   "compilerOptions": {
     "target": "ES2022",
     "module": "ESNext",
@@ -28,12 +30,7 @@
     "allowImportingTsExtensions": true,
     "rewriteRelativeImportExtensions": true,
 
-    // Temporary, for the incremental migration: .js and .ts coexist in src/
-    // until the last file is converted, and untyped .js is not checked.
-    "allowJs": true,
-    "checkJs": false,
-
     "skipLibCheck": true
   },
-  "include": ["src/**/*", "test/**/*", "tools/**/*"]
+  "include": ["src/**/*"]
 }
