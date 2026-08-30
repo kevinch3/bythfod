@@ -32,7 +32,7 @@ jobs:
       - name: Test
         run: npm test
       - name: Verify the vendored contract is in sync with its source
-        run: node tools/sync-contract.mjs --check || echo "::warning::vendored contract differs from upstream; run npm run contract:sync"
+        run: node tools/sync-contract.mjs --check
       - name: Build the offline static site
         run: node tools/build-static.mjs
       - name: Assert the public build ships no API code or credentials

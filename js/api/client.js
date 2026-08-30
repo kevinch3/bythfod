@@ -85,7 +85,10 @@ export class ApiClient {
   // Participants
   getParticipants(q) { return this._req('GET', `/participants${q ? `?q=${encodeURIComponent(q)}` : ''}`); }
   createParticipant(data) { return this._req('POST', '/participants', data); }
-  deleteParticipant(id) { return this._req('DELETE', `/participants/${id}`); }
+  /** hard:true removes the row; the default deactivates it (active = 0). */
+  deleteParticipant(id, { hard = false } = {}) {
+    return this._req('DELETE', `/participants/${id}${hard ? '?hard=1' : ''}`);
+  }
 
   // Registrations
   getRegistrations({ year, comp, dropped } = {}) {

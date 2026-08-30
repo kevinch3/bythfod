@@ -399,3 +399,32 @@ scenario('B4', '?dropped= selects live, withdrawn, or both', async (ctx) => {
   assert.equal((await ids('&dropped=all')).length, 2);
   ctx.expectValid('listRegistrations', 200, (await ctx.api.get(`/registrations?comp=${comp}&dropped=all`)).body);
 });
+
+scenario('B11', 'participants: soft by default, ?hard=1 removes, FK protects history', async (ctx) => {
+  const marker = `ZZH${Date.now()}`;
+  const soft = await ctx.api.post('/participants', { name: `${marker}soft`, type: 'IND' });
+  const hard = await ctx.api.post('/participants', { name: `${marker}hard`, type: 'IND' });
+  ctx.track.participants.push(soft.body.id);
+
+  // Default is unchanged: the row survives, deactivated.
+  assert.equal((await ctx.api.del(`/participants/${soft.body.id}`)).status, 204);
+  const stillThere = await ctx.api.get(`/participants/${soft.body.id}`);
+  assert.equal(stillThere.status, 200, 'the default delete removed the row — that would be breaking');
+  assert.equal(stillThere.body.active, 0);
+
+  // hard=1 actually removes.
+  assert.equal((await ctx.api.del(`/participants/${hard.body.id}?hard=1`)).status, 204);
+  assert.equal((await ctx.api.get(`/participants/${hard.body.id}`)).status, 404, 'hard delete left the row');
+
+  // A participant with history cannot be lost this way.
+  const comp = await makeCompetition(ctx, 140);
+  const held = await makeParticipant(ctx, 140);
+  const reg = await ctx.api.post('/registrations', {
+    participant_id: held.id, competition_id: comp, year: SANDBOX.YEAR,
+  });
+  ctx.track.registrations.push(reg.body.id);
+  const blocked = await ctx.api.del(`/participants/${held.id}?hard=1`);
+  assert.equal(blocked.status, 409, 'a participant with a registration was hard-deleted');
+  assert.equal(blocked.body.code, 'CONFLICT_REFERENCE');
+  ctx.note('B11', 'hard delete is opt-in and refuses anyone with registrations or works.');
+});

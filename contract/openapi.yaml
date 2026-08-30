@@ -482,17 +482,28 @@ paths:
         '409': { $ref: '#/components/responses/Conflict' }
     delete:
       operationId: deleteParticipant
-      summary: Deactivate a participant
+      summary: Deactivate or remove a participant
       tags: [participants]
       description: |
-        **Soft delete** — sets `active = 0`; the row remains and is still returned
-        by the list endpoints (B3). Repeating the call on an already-inactive
-        participant still reports a change and still returns 204, so callers
-        cannot tell "deleted" from "already deleted".
+        **Soft by default** — sets `active = 0`; the row remains and is still
+        returned by the list endpoints (B3). Repeating the call on an
+        already-inactive participant still reports a change and still returns
+        204, so callers cannot tell "deleted" from "already deleted".
+
+        `?hard=1` removes the row instead. Foreign keys from `registration` and
+        `work` protect anyone still referenced — that is reported as **409**
+        (`code: CONFLICT_REFERENCE`), so a participant with history cannot be
+        lost. Delete their registrations and works first if removal is intended.
+      parameters:
+        - name: hard
+          in: query
+          schema: { type: string, enum: ['1'] }
+          description: Pass `1` to remove the row rather than deactivate it.
       responses:
-        '204': { description: Marked inactive }
+        '204': { description: 'Marked inactive; removed when hard=1' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
 
   /registrations:
     get:

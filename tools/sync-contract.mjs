@@ -35,6 +35,12 @@ const FILES = [
 const sha = (p) => createHash('sha256').update(readFileSync(p)).digest('hex');
 
 if (!existsSync(source)) {
+  if (check) {
+    // CI checks out this repo alone, so there is nothing to compare against.
+    // "Cannot verify" is not "drifted" — say so and pass.
+    console.log(`· skipped: ${source} is not available, cannot compare`);
+    process.exit(0);
+  }
   console.error(`✘ source repo not found: ${source}`);
   console.error('  pass --from <path> or set EISTEDGLOBAL_PATH');
   process.exit(1);

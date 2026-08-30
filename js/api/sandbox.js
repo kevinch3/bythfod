@@ -85,7 +85,11 @@ export async function prepareSandbox({ plan, config, username, password, log = (
   for (const p of found) {
     // id is an autoincrement rowid; our marker lives in document_id.
     if (!String(p.document_id ?? '').startsWith(SIM_PREFIX)) continue;
-    await api.deleteParticipant(p.id);
+    // Hard delete: the soft one leaves the row, so the sim's cast accumulated
+    // on every run. Registrations and works are already gone by this point, so
+    // nothing references these rows. A participant that somehow still has
+    // history is protected by the foreign key and reported as 409.
+    await api.deleteParticipant(p.id, { hard: true });
     dropped++;
   }
   log(`✔ sandbox reseteado (${sandboxComps.length} competencias, ${removedRegs} inscripciones borradas, ${dropped}/${found.length} participantes)`);
