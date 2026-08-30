@@ -275,10 +275,14 @@ scenario('7', 'placement accepts 1/2/3/mencion and rejects anything else (B10)',
     participant_id: p.id, competition_id: comp, title: 'bad', placement: 'primero',
   });
   assert.notEqual(bad.status, 201, 'an invalid placement was accepted — B10 has regressed');
-  assert.equal(bad.status, 400, `expected 400 after B1, got ${bad.status}`);
-  assert.equal(bad.body.code, 'VALIDATION_VALUE');
+  assert.equal(bad.status, 400, `expected 400, got ${bad.status}`);
+  // Validated at the boundary now, so the error names the field instead of
+  // surfacing a constraint failure (B2).
+  assert.equal(bad.body.code, 'VALIDATION_FAILED');
+  assert.ok(bad.body.fields?.some(f => f.field === 'placement'),
+    'the 400 did not say which field was wrong');
   ctx.expectValid('createWork', bad.status, bad.body);
-  ctx.note('7', 'invalid placement rejected as 400 VALIDATION_VALUE (B10 + B1).');
+  ctx.note('7', 'invalid placement rejected as 400 VALIDATION_FAILED, naming the field (B2).');
 });
 
 scenario('8', "type enum IND/GRU is shared by competitions and participants", async (ctx) => {
@@ -396,11 +400,19 @@ scenario('B4', '?dropped= selects live, withdrawn, or both', async (ctx) => {
   ctx.track.registrations.push(rLive.body.id, rGone.body.id);
   await ctx.api.patch(`/registrations/${rGone.body.id}/drop`);
 
+  // Assert membership, not exact equality: the competition id is reused across
+  // runs (it cannot be deleted once registered), so a real instance carries
+  // rows from earlier runs that a fresh mock does not.
   const ids = async (q) => (await ctx.api.get(`/registrations?comp=${comp}${q}`)).body.map(r => r.id);
-  assert.deepEqual(await ids(''), [rLive.body.id], 'the default stopped hiding dropped rows');
-  assert.deepEqual(await ids('&dropped=0'), [rLive.body.id]);
-  assert.deepEqual(await ids('&dropped=1'), [rGone.body.id]);
-  assert.equal((await ids('&dropped=all')).length, 2);
+  const byDefault = await ids('');
+  assert.ok(byDefault.includes(rLive.body.id), 'the live registration was hidden');
+  assert.ok(!byDefault.includes(rGone.body.id), 'the default stopped hiding dropped rows');
+  assert.deepEqual(await ids('&dropped=0'), byDefault, 'dropped=0 differs from the default');
+  const withdrawn = await ids('&dropped=1');
+  assert.ok(withdrawn.includes(rGone.body.id), 'dropped=1 omitted the withdrawn one');
+  assert.ok(!withdrawn.includes(rLive.body.id), 'dropped=1 included a live one');
+  const both = await ids('&dropped=all');
+  assert.ok(both.includes(rLive.body.id) && both.includes(rGone.body.id), 'dropped=all missed one');
   ctx.expectValid('listRegistrations', 200, (await ctx.api.get(`/registrations?comp=${comp}&dropped=all`)).body);
 });
 
