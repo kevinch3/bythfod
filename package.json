@@ -11,7 +11,8 @@
     "contract:live": "node tools/contract-live.mjs",
     "typecheck": "tsc --noEmit",
     "build": "tsc -p tsconfig.build.json",
-    "contract:gen": "node tools/gen-contract.mjs"
+    "contract:gen": "node tools/gen-contract.mjs",
+    "mock": "node tools/mock-server.mjs"
   },
   "devDependencies": {
     "@types/node": "^26.4.0",

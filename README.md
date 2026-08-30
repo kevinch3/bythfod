@@ -48,10 +48,28 @@ revertir esa línea si querés que `ng serve` vuelva a pegarle al servidor real.
 Controles: `Espacio` o PAUSA/SEGUIR · velocidad ×0.5–×4 · PROGRAMA abre el
 listado (click en un ítem = saltar a él) · SONIDO on/off · selector de tema.
 
+## Sin backend: el mock
+
+`bythfod` incluye una implementación de la API de eistedglobal — mismo esquema
+(`contract/schema.sql`, vendorizado byte a byte), mismo contrato, mismas rarezas.
+No hace falta levantar la API real ni tener credenciales:
+
+```bash
+npm run mock                                  # esquema vacío en :3000
+npm run mock -- --seed demo                   # un festival navegable
+npm run mock -- --seed bythfod --plan-seed 42 # poblado POR LA SIM, sobre HTTP real
+npm run mock -- --jwt-expires 5               # tokens cortos, para probar el re-login
+```
+
+El admin de Angular corre contra él sin cambiar nada (`environment.ts` ya apunta
+a `localhost:3000`). El último modo es el interesante: levanta el mock y corre
+`prepareSandbox` contra él con el `ApiClient` de siempre — el poblador y el
+emulador son el mismo código, apuntado por URL.
+
 ## Herramientas headless
 
 ```bash
-node --test                      # suite completa (node 22, sin dependencias)
+node --test                      # suite completa, incluye el contrato contra el mock
 EISTED_USER=… EISTED_PASS=… node tools/e2e.mjs --seed 42   # login→reset→premiar
 EISTED_USER=… EISTED_PASS=… node tools/verify.mjs          # tabla del sandbox
 ```
