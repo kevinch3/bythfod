@@ -3,11 +3,11 @@
 // them consequences (synth pieces, API awards, jury lines).
 import { CONFIG } from './config.ts';
 import { PROGRAM } from './core/program.ts';
-import { generateDayPlan } from './core/roster.js';
-import { buildTimeline } from './core/timeline.js';
+import { generateDayPlan } from './core/roster.ts';
+import { buildTimeline } from './core/timeline.ts';
 import { makeRng } from './core/rng.ts';
-import * as E from './core/engine.js';
-import { TemplateFeedbackGenerator, generateWithTimeout } from './core/feedback.js';
+import * as E from './core/engine.ts';
+import { TemplateFeedbackGenerator, generateWithTimeout } from './core/feedback.ts';
 import { Synth } from './render/synth.js';
 import { MUSIC } from './render/music.js';
 import { StageRend } from './render/stage.js';

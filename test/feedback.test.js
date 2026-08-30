@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { makeRng } from '../src/core/rng.ts';
 import {
   FeedbackGenerator, TemplateFeedbackGenerator, pickFragment, generateWithTimeout,
-} from '../src/core/feedback.js';
+} from '../src/core/feedback.ts';
 
 const item = (kind, language, placements) => ({
   ordinal: 1,

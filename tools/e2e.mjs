@@ -7,7 +7,7 @@ import { CONFIG as SIM_CONFIG } from '../src/config.ts';
 import { API_CONFIG } from '../src/api/config.ts';
 const CONFIG = { ...SIM_CONFIG, ...API_CONFIG };
 import { PROGRAM } from '../src/core/program.ts';
-import { generateDayPlan } from '../src/core/roster.js';
+import { generateDayPlan } from '../src/core/roster.ts';
 import { prepareSandbox } from '../src/api/sandbox.js';
 
 const arg = (name, dflt) => {

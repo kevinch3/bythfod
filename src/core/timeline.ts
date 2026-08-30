@@ -1,6 +1,7 @@
 // DayPlan → flat Segment[] the engine steps through. Pure module.
 // Segment: { kind, itemOrdinal, sessionId, entrantIdx?, dur, stage, music?, banner? }
 import { makeRng } from './rng.ts';
+import type { DayPlan, Entrant, Kind } from './types.ts';
 import { MUSIC_BY_KIND } from '../render/music.js';
 
 // Act types the vendored StageRend knows how to build ('empty'/'award' added in M3).
@@ -9,9 +10,28 @@ export const STAGE_ACTS = [
   'dancer', 'longways', 'ceremoni', 'announcer', 'empty', 'award',
 ];
 
+/** What the stage renderer should draw for a segment. */
+export interface StageDirection {
+  actType: string;
+  n: number;
+  spotMode: string;
+}
+
+/** One beat of the show. `dur` is seconds at speed 1. */
+export interface Segment {
+  kind: 'intro' | 'perform' | 'applause' | 'adjudicate' | 'award' | 'ceremony';
+  itemOrdinal: number;
+  sessionId: string;
+  dur: number;
+  stage: StageDirection;
+  entrantIdx?: number;
+  music?: string;
+  banner?: string;
+}
+
 const INSTRUMENTAL_ACT = { violin: 'violin', trumpet: 'trumpet', duo: 'duo' };
 
-function stageFor(kind, entrant, music) {
+function stageFor(kind: Kind, entrant: Entrant, music: string): StageDirection {
   switch (kind) {
     case 'solo': return { actType: 'solo', n: 1, spotMode: 'center' };
     case 'recitacion': return { actType: 'reciter', n: 1, spotMode: 'center' };
@@ -20,19 +40,24 @@ function stageFor(kind, entrant, music) {
     case 'conjunto':
     case 'parti': return { actType: 'choir', n: entrant.members || 8, spotMode: 'choir' };
     case 'deuawd': return { actType: 'duo', n: 2, spotMode: 'duo' };
-    case 'dawns':
-      return entrant.members <= 2
-        ? { actType: 'dancer', n: entrant.members, spotMode: entrant.members === 2 ? 'duo' : 'center' }
-        : { actType: 'longways', n: entrant.members, spotMode: 'choir' };
-    case 'instrumental': return { actType: INSTRUMENTAL_ACT[music] || 'duo', n: 2, spotMode: 'center' };
+    case 'dawns': {
+      // Group entrants carry `members`; the sibling branches above default the
+      // same way, so a dance entrant without one is drawn as a couple.
+      const dancers = entrant.members ?? 2;
+      return dancers <= 2
+        ? { actType: 'dancer', n: dancers, spotMode: dancers === 2 ? 'duo' : 'center' }
+        : { actType: 'longways', n: dancers, spotMode: 'choir' };
+    }
+    case 'instrumental':
+      return { actType: INSTRUMENTAL_ACT[music as keyof typeof INSTRUMENTAL_ACT] ?? 'duo', n: 2, spotMode: 'center' };
     case 'ceremony': return { actType: 'ceremoni', n: 1, spotMode: 'center' };
     default: return { actType: 'solo', n: 1, spotMode: 'center' };
   }
 }
 
-export function buildTimeline(dayPlan) {
+export function buildTimeline(dayPlan: DayPlan): Segment[] {
   const timelineRng = makeRng(dayPlan.seed).split('timeline');
-  const segments = [];
+  const segments: Segment[] = [];
 
   for (const session of dayPlan.sessions) {
     for (const item of session.items) {
@@ -53,8 +78,8 @@ export function buildTimeline(dayPlan) {
 
       segments.push({ ...base, kind: 'intro', dur: 4, banner, stage: { actType: 'announcer', n: 2, spotMode: 'announcer' } });
 
-      item.entrants.forEach((entrant, entrantIdx) => {
-        const music = rng.pick(MUSIC_BY_KIND[kind] || MUSIC_BY_KIND.solo);
+      item.entrants.forEach((entrant: Entrant, entrantIdx: number) => {
+        const music = rng.pick(MUSIC_BY_KIND[kind as keyof typeof MUSIC_BY_KIND] ?? MUSIC_BY_KIND.solo);
         const stage = stageFor(kind, entrant, music);
         segments.push({ ...base, kind: 'perform', entrantIdx, dur: rng.int(8, 14), banner, music, stage });
         segments.push({ ...base, kind: 'applause', entrantIdx, dur: 3, stage });

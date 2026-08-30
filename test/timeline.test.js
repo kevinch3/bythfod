@@ -1,8 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { PROGRAM } from '../src/core/program.ts';
-import { generateDayPlan } from '../src/core/roster.js';
-import { buildTimeline, STAGE_ACTS } from '../src/core/timeline.js';
+import { generateDayPlan } from '../src/core/roster.ts';
+import { buildTimeline, STAGE_ACTS } from '../src/core/timeline.ts';
 import { MUSIC, MUSIC_BY_KIND } from '../src/render/music.js';
 
 const plan = generateDayPlan(PROGRAM, 42);

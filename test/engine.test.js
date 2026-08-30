@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   createEngine, step, start, pause, play, setSpeed, skipItem, jumpTo,
   setJuryLines, stageState, juryState, positionState,
-} from '../src/core/engine.js';
+} from '../src/core/engine.ts';
 
 const stg = (actType, n = 1, spotMode = 'center') => ({ actType, n, spotMode });
 const SEGS = [

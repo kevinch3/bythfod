@@ -1,7 +1,7 @@
 // Results poller: the board shows a winner only after the API says so — the
 // live loop is a genuine round-trip (POST /works → GET /works → board row).
 // Polls a rolling window (current comp + the 3 before it in running order).
-import { TodoError } from '../core/roster.js';
+import { TodoError } from '../core/roster.ts';
 
 /** Ordinals worth polling: the current one plus up to 3 already-played ones. */
 export function pollWindow(runningOrder, currentOrdinal, size = 4) {
@@ -19,7 +19,7 @@ export function pollWindow(runningOrder, currentOrdinal, size = 4) {
  * Trade-off: aggressive retry finds recovery sooner but hammers a dying API.
  */
 export function nextPollDelay(pollerState) {
-  throw new TodoError('nextPollDelay: TODO(you) — see the docblock in js/api/poller.js');
+  throw new TodoError('nextPollDelay: TODO(you) — see the docblock in src/api/poller.ts');
 }
 
 function delayOrFallback(state, config = {}) {

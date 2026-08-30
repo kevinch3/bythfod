@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { PROGRAM } from '../src/core/program.ts';
 import { makeRng } from '../src/core/rng.ts';
-import { generateDayPlan, drawPlacements, shuffleKeepingFixed } from '../src/core/roster.js';
+import { generateDayPlan, drawPlacements, shuffleKeepingFixed } from '../src/core/roster.ts';
 
 const flat = plan => plan.sessions.flatMap(s => s.items);
 

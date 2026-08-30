@@ -1,3 +1,5 @@
+import type { ItemPlan, Placement, PlacementDraw } from './types.ts';
+import type { Segment } from './timeline.ts';
 // Show engine: steps a Segment[] with bythfod's rhythm (fades wrap ITEMS, not
 // segments). Pure module — no DOM/audio/network. step() mutates the state
 // object and returns effects (data) for main.js to interpret:
@@ -5,17 +7,49 @@
 //   {type:'award', itemOrdinal} {type:'speak', itemOrdinal}
 const FADE_IN = 1.4, FADE_IN_VISUAL = 1.1, FADE_OUT = 1.1, FADE_OUT_VISUAL = 0.9;
 
+/** A data effect: the engine describes what should happen, main.ts does it. */
+export type Effect =
+  | { type: 'music'; piece: string | undefined }
+  | { type: 'silence' }
+  | { type: 'noise' }
+  | { type: 'fanfare' }
+  /** Record this item's results — main.ts calls sandbox.award(). */
+  | { type: 'award'; itemOrdinal: number }
+  /** Ask for jury lines for this item; they arrive via setJuryLines(). */
+  | { type: 'speak'; itemOrdinal: number };
+
+/** The show's mutable state. Advanced only through step() and the verbs below. */
+export interface EngineState {
+  segments: Segment[];
+  itemsByOrdinal: Record<number, ItemPlan>;
+  cursor: number;
+  phase: 'idle' | 'fade-in' | 'segment' | 'fade-out' | 'done';
+  timer: number;
+  speed: number;
+  paused: boolean;
+  started: boolean;
+  overlay: number;
+  lines: string[];
+  lineIdx: number;
+  lineClock: number;
+}
+
 export const PLACE_LABELS = {
   mencion: 'Mención', 3: '3ydd · Tercer premio', 2: '2il · Segundo premio', 1: '1af · Primer premio',
 };
-const AWARD_ORDER = ['mencion', '3', '2', '1']; // ascending drama
+const AWARD_ORDER: Placement[] = ['mencion', '3', '2', '1']; // ascending drama
 
-function awardOrderFor(item) {
-  if (!item || item.placements === 'desierto') return [];
-  return AWARD_ORDER.filter(pl => item.placements.some(p => p.placement === pl));
+function awardOrderFor(item: ItemPlan): Placement[] {
+  if (!item) return [];
+  const { placements } = item;
+  if (placements === 'desierto') return [];
+  return AWARD_ORDER.filter(pl => placements.some(p => p.placement === pl));
 }
 
-export function createEngine(segments, { itemsByOrdinal = {} } = {}) {
+export function createEngine(
+  segments: Segment[],
+  { itemsByOrdinal = {} }: { itemsByOrdinal?: Record<number, ItemPlan> } = {},
+): EngineState {
   return {
     segments, itemsByOrdinal,
     cursor: 0, phase: 'idle', timer: 0,
@@ -24,9 +58,10 @@ export function createEngine(segments, { itemsByOrdinal = {} } = {}) {
   };
 }
 
-const seg = st => st.segments[st.cursor];
+/** The current segment. Callers only reach this while the cursor is in range. */
+const seg = (st: EngineState): Segment => st.segments[st.cursor] as Segment;
 
-function enterSegment(st) {
+function enterSegment(st: EngineState): Effect[] {
   st.timer = 0;
   st.lines = []; st.lineIdx = 0; st.lineClock = 0;
   const s = seg(st);
@@ -44,29 +79,30 @@ function enterSegment(st) {
   }
 }
 
-function awardLines(item) {
+function awardLines(item: ItemPlan): string[] {
   if (!item) return [];
   if (item.placements === 'desierto') {
     return ['El jurado declara el premio DESIERTO — neb yn deilwng.'];
   }
   const byKey = Object.fromEntries(item.entrants.map(e => [e.key, e.displayName]));
+  const drawn: PlacementDraw[] = item.placements;
   return AWARD_ORDER
-    .map(place => item.placements.find(p => p.placement === place))
-    .filter(Boolean)
+    .map(place => drawn.find(p => p.placement === place))
+    .filter((p): p is PlacementDraw => p !== undefined)
     .map(p => `${PLACE_LABELS[p.placement]}: ${byKey[p.entrantKey]}`);
 }
 
-export function start(st) {
+export function start(st: EngineState): Effect[] {
   st.started = true; st.phase = 'fade-in'; st.cursor = 0;
   st.timer = 0; st.overlay = 1;
   return [{ type: 'fanfare' }];
 }
 
-export function pause(st) { st.paused = true; return [{ type: 'silence' }]; }
-export function play(st) { st.paused = false; return []; }
-export function setSpeed(st, speed) { st.speed = speed; return []; }
+export function pause(st: EngineState): Effect[] { st.paused = true; return [{ type: 'silence' }]; }
+export function play(st: EngineState): Effect[] { st.paused = false; return []; }
+export function setSpeed(st: EngineState, speed: number): Effect[] { st.speed = speed; return []; }
 
-export function step(st, dtReal) {
+export function step(st: EngineState, dtReal: number): Effect[] {
   if (!st.started || st.paused || st.phase === 'done' || st.phase === 'idle') return [];
   const dt = dtReal * st.speed;
   st.timer += dt;
@@ -108,23 +144,24 @@ export function step(st, dtReal) {
   return [];
 }
 
-function tickJuryLines(st, dt) {
+function tickJuryLines(st: EngineState, dt: number): Effect[] {
   const s = seg(st);
-  if ((s.kind !== 'adjudicate' && s.kind !== 'award') || st.lines.length === 0) return;
+  if ((s.kind !== 'adjudicate' && s.kind !== 'award') || st.lines.length === 0) return [];
   st.lineClock += dt;
   const perLine = s.dur / Math.max(1, st.lines.length);
   if (st.lineClock > perLine && st.lineIdx < st.lines.length - 1) {
     st.lineIdx += 1; st.lineClock = 0;
   }
+  return [];
 }
 
 /** Feed adjudication lines (from a FeedbackGenerator) into the current segment. */
-export function setJuryLines(st, lines) {
+export function setJuryLines(st: EngineState, lines: string[]): Effect[] {
   if (seg(st)?.kind === 'adjudicate') { st.lines = lines; st.lineIdx = 0; st.lineClock = 0; }
   return [];
 }
 
-export function skipItem(st) {
+export function skipItem(st: EngineState): Effect[] {
   if (!st.started || st.phase === 'done') return [];
   const ord = seg(st).itemOrdinal;
   let i = st.cursor;
@@ -134,13 +171,13 @@ export function skipItem(st) {
   return [{ type: 'silence' }];
 }
 
-export function skipSegment(st) {
+export function skipSegment(st: EngineState): Effect[] {
   if (st.phase !== 'segment') return [];
   st.timer = seg(st).dur + 0.001;
   return [{ type: 'silence' }];
 }
 
-export function jumpTo(st, ordinal) {
+export function jumpTo(st: EngineState, ordinal: number): Effect[] {
   const idx = st.segments.findIndex(s => s.itemOrdinal === ordinal);
   if (idx < 0) return [];
   st.started = true;
@@ -150,7 +187,7 @@ export function jumpTo(st, ordinal) {
 
 // ── Derived render states ──────────────────────────────────────────────────
 
-export function stageState(st) {
+export function stageState(st: EngineState) {
   const s = seg(st);
   const base = { actType: '', phase: 'idle', overlay: st.overlay, banner: null, spotMode: 'center', n: 1, actT: 0 };
   if (!st.started || st.phase === 'done' || st.phase === 'idle') return { ...base, overlay: 1 };
@@ -184,7 +221,7 @@ export function stageState(st) {
   }
 }
 
-export function juryState(st) {
+export function juryState(st: EngineState) {
   const off = { mode: 'off', line: '', lineT: 0 };
   if (!st.started || st.phase !== 'segment') return off;
   const s = seg(st);
@@ -200,7 +237,7 @@ export function juryState(st) {
   }
 }
 
-export function positionState(st) {
+export function positionState(st: EngineState) {
   const s = seg(st);
   if (!s) return { itemOrdinal: null, nextItemOrdinal: null, segKind: null, sessionId: null, done: st.phase === 'done' };
   let next = null;
